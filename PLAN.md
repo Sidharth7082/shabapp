@@ -48,6 +48,7 @@ offline-first on IndexedDB and installs as a PWA; an Android wrapper via Capacit
 | Visit clock: starts when the start OTP is verified, per-visit deadline, late flag | **Live** | Verified on SH-1051: `startedAt`/`workDueAt` exactly 60 min apart, timer `59m 59s`, deadline `10:04 pm` |
 | Work-done OTP required to close the visit | **Demo** | Verified: footer blocked until the second code; verify set `workDoneOtpAt`; visit closed with sign-off and `completedLate` flagged |
 | Team locator (last known position) | **Live (last fix only)** | Control room shows on-site status, active visit, latest check-in/sign-off fix and a Maps link; live tracking needs Phase 2 |
+| Android app (debug APK) | **Live for testing** | Capacitor 8, `com.shabh.service`; verified on Pixel 6 / API 36: sign-in, OTP clock `59m 59s`, live camera 1392×1856, photo + watermark + GPS ±5 m |
 | Live camera capture + burned watermark (before + after per service) | **Live** | Zero file inputs in the bundle (CI-checked) |
 | Checklists with Pass / Fail / N/A, issue capture | **Live** | Re-opening a service restores 9/9 states |
 | Completion sign-off + rating | **Live** | Blocked until every service is done |
@@ -126,10 +127,12 @@ offline-first on IndexedDB and installs as a PWA; an Android wrapper via Capacit
 - [ ] Realtime job assignment (manager creates → technician device updates)
 
 ### Phase 3 — Android + field readiness
-- [ ] Capacitor wrapper, app id `com.shabh.service`, camera permission rationale screen
-- [ ] HTTPS-only deployment (geolocation requires a secure context)
+- [x] Capacitor wrapper, app id `com.shabh.service`, camera + location permissions
+- [x] Debug APK built and exercised on a Pixel 6 / API 36 emulator (login, OTP clock, live camera, capture)
+- [ ] App icon + splash from the real brand asset
+- [ ] HTTPS production deployment for the PWA (geolocation needs a secure context)
 - [ ] Background sync + "pending uploads" indicator
-- [ ] Real brand icon/splash, Play Store internal testing track
+- [ ] Play Store internal testing track / release signing
 - [ ] Storage-quota guard: warn before photo storage pressure, bulk export of closed jobs
 
 ### Phase 4 — Manager depth
@@ -157,7 +160,7 @@ offline-first on IndexedDB and installs as a PWA; an Android wrapper via Capacit
 | 5 | Sync engine (jobs + estimates) | P1 | #1 | 2–3 days |
 | 6 | Photo upload queue → Supabase Storage | P1 | #1, #5 | 1–2 days |
 | 7 | AMC rate-card values | P1 | **User to supply rates** | 0.5 day |
-| 8 | Capacitor Android build | P1 | Android SDK / Play Console | 1–2 days |
+| 8 | Android release build + Play Store internal testing (debug APK done 2026-11-02) | P1 | Play Console account | 1 day |
 | 9 | Real brand icon + splash | P2 | User to supply logo | 0.5 day |
 | 10 | PDF quotation export | P2 | Company letterhead + GST details | 1 day |
 | 11 | Manager analytics v2, reassignment | P2 | #5 | 3 days |
@@ -228,6 +231,16 @@ This file is maintained by **rules, not by memory**:
 7. Never delete old changelog entries; append.
 
 ## 10. Changelog
+
+### 2026-11-02 — Android test build
+- Added the Capacitor 8 wrapper (`com.shabh.service`) with camera and location permissions,
+  plus `npm run android:sync` / `npm run android:apk`.
+- Built a debug APK and exercised it on a Pixel 6 / API 36 emulator: demo sign-in, board with
+  shift points, job sheet, start OTP → `59m 59s` left and the 60-minute deadline, services
+  unlocked, live camera `readyState 4` at 1392×1856, before photo captured with watermark and
+  `GPS ±5 m`.
+- Added `scripts/device-test.mjs`, which replays the flow through the WebView CDP socket.
+- APK attached to the GitHub release; build outputs stay out of git.
 
 ### 2026-11-02 — Shift points + team locator
 - Shift target now counts **completed houses**: 1 house = 1 point, inner services do not add.

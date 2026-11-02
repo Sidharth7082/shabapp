@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Shabh Service</string>
+    <string name="title_activity_main">Shabh Service</string>
+    <string name="package_name">com.shabh.service</string>
+    <string name="custom_url_scheme">com.shabh.service</string>
+</resources>

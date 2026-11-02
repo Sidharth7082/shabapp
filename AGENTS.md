@@ -71,6 +71,8 @@ npm run dev            # http://127.0.0.1:5173
 npx tsc --noEmit       # typecheck (tsc -b fails: no composite project)
 npm test               # 37 engine/helper tests
 npm run build          # tsc --noEmit && vite build (PWA precache)
+npm run android:apk    # build + cap sync + Android debug APK
+node scripts/device-test.mjs   # replay the visit flow inside the installed app (needs adb + CDP)
 node scripts/make-icons.mjs   # regenerate placeholder icons
 ```
 

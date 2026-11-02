@@ -125,6 +125,24 @@ restores the seeded board.
   scroll, and restore focus to the trigger.
 - PWA build precaches 29 assets; `npx tsc --noEmit` and all 37 tests pass after the pass.
 
+## Android app (test build)
+
+```bash
+npm run android:apk    # web build + cap sync + debug APK
+# android/app/build/outputs/apk/debug/app-debug.apk
+$ANDROID_HOME/platform-tools/adb install -r android/app/build/outputs/apk/debug/app-debug.apk
+```
+
+- Capacitor 8 wrapper, package `com.shabh.service`, served from `https://localhost`.
+- Declares `CAMERA`, `ACCESS_FINE_LOCATION` and `ACCESS_COARSE_LOCATION`; the WebView is the
+  same camera-only bundle as the PWA (no file pickers).
+- **Verified on a Pixel 6 / API 36 emulator:** sign-in, board with shift points, job sheet,
+  start OTP (`59m 59s` left, deadline set from tier 1), services unlocked, live camera
+  (`readyState 4`, 1392×1856), before photo captured with watermark and `GPS ±5 m`.
+- `node scripts/device-test.mjs` replays the flow over the WebView CDP socket:
+  `adb forward tcp:9222 localabstract:webview_devtools_remote_<pid>`.
+- The debug APK is attached to the GitHub release for the tag; binaries are not committed.
+
 ## Backend setup (when credentials are available)
 
 ```bash
