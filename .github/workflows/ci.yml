@@ -1,0 +1,49 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      - name: Typecheck
+        run: npx tsc --noEmit
+
+      - name: Tests
+        run: npm test
+
+      - name: Build
+        run: npm run build
+
+      - name: Camera-only invariant
+        run: |
+          count=$(grep -o 'type:"file"' dist/assets/*.js | wc -l)
+          if [ "$count" -ne 0 ]; then
+            echo "::error::Found $count file input(s) in the bundle. Proof photos must be camera-only."
+            exit 1
+          fi
+          echo "No file inputs in the bundle."
+
+      - name: Plan freshness reminder
+        if: github.event_name == 'push' && github.event.before != '0000000000000000000000000000000000000000'
+        run: |
+          changed=$(git diff --name-only "${{ github.event.before }}" "${{ github.sha }}")
+          echo "$changed" | grep -qE '^(src|supabase)/' || exit 0
+          echo "$changed" | grep -qx 'PLAN.md' && exit 0
+          echo "::warning file=PLAN.md::Code changed but PLAN.md was not updated. Keep the living plan in sync."
