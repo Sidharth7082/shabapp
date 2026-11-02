@@ -122,6 +122,7 @@ generate, hash, deliver and verify the customer code; the client never sees it.
 
 - `PLAN.md` — **living plan**: status, phases, backlog, blockers, changelog (read first)
 - `AGENTS.md` — rules every AI agent follows, including keeping the plan current
+- `CLAUDE.md` — Claude entrypoint that imports the same rules
 - `docs/REA-spec.md` — constants and formulas recovered from the live site
 - `docs/SECURITY-OTP-CAMERA.md` — OTP lifecycle and why gallery uploads are impossible
 - `docs/DATA-MODEL.md` — IndexedDB and Postgres schemas

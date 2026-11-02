@@ -205,9 +205,10 @@ This file is maintained by **rules, not by memory**:
 
 ### 2026-11-02 — Repository + plan governance
 - Published the app as the private GitHub repo `shabapp` (`main` only).
-- Added this `PLAN.md`, `AGENTS.md` (agent rules), `.github/copilot-instructions.md`,
-  `.github/workflows/ci.yml` (typecheck, tests, build, camera-only check, plan-freshness
-  warning) and the `.githooks/pre-commit` plan guard (`npm run setup:hooks`).
+- Added this `PLAN.md`, `AGENTS.md` (agent rules), `CLAUDE.md` (Claude entrypoint),
+  `.github/copilot-instructions.md`, `.github/workflows/ci.yml` (typecheck, tests, build,
+  camera-only check, plan-freshness warning) and the `.githooks/pre-commit` plan guard
+  (`npm run setup:hooks`).
 
 ### 2026-11-02 — Phase 1 complete
 - Recovered all four calculators from the live site; 92 SKUs with HSN + GST.
