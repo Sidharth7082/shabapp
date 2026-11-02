@@ -12,7 +12,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 2
+          fetch-depth: 0
 
       - uses: actions/setup-node@v4
         with:
@@ -60,7 +60,12 @@ jobs:
       - name: Plan freshness reminder
         if: github.event_name == 'push' && github.event.before != '0000000000000000000000000000000000000000'
         run: |
-          changed=$(git diff --name-only "${{ github.event.before }}" "${{ github.sha }}")
+          before="${{ github.event.before }}"
+          if ! git cat-file -e "${before}^{commit}" 2>/dev/null; then
+            echo "Base commit $before is not available; skipping the plan freshness check."
+            exit 0
+          fi
+          changed=$(git diff --name-only "$before" "${{ github.sha }}")
           echo "$changed" | grep -qE '^(src|supabase)/' || exit 0
           echo "$changed" | grep -qx 'PLAN.md' && exit 0
           echo "::warning file=PLAN.md::Code changed but PLAN.md was not updated. Keep the living plan in sync."
