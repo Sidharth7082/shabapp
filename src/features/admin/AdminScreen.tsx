@@ -27,11 +27,18 @@ import { NumberInput, Select, TextInput } from '@/components/ui/fields'
 import { toast } from '@/components/ui/toast'
 import { CHECKLIST_TEMPLATES } from '@/data/checklistTemplates'
 import { JOB_KIND_LABEL, JOB_STATUS_LABEL, servicesDone } from '@/domain/jobs/types'
-import type { JobKind } from '@/domain/jobs/types'
+import type { CreditTier, JobKind } from '@/domain/jobs/types'
 import { createJob, deleteJob } from '@/services/jobs'
 import { useSession } from '@/services/session'
 
 const SYSTEMS = [
+  'AC Service',
+  'Solar Panels',
+  'CCTV',
+  'Chimney',
+  'RO',
+  'Geyser',
+  'Meter',
   'Fire Alarm',
   'Sprinkler',
   'Hydrant',
@@ -39,8 +46,6 @@ const SYSTEMS = [
   'Extinguishers',
   'Gas Suppression',
   'Kitchen Hood',
-  'AC Service',
-  'Solar Panels',
   'Housekeeping'
 ]
 
@@ -69,7 +74,7 @@ function NewJobSheet({ onClose }: { onClose: () => void }) {
   const [priority, setPriority] = useState<'normal' | 'urgent'>('normal')
   const [slotStart, setSlotStart] = useState(localInputValue())
   const [slaMinutes, setSlaMinutes] = useState('240')
-  const [workLimit, setWorkLimit] = useState('120')
+  const [tier, setTier] = useState<CreditTier>(2)
   const [services, setServices] = useState<ServiceDraft[]>([
     { name: '', system: 'Fire Alarm', templateId: 'fire-alarm' }
   ])
@@ -103,7 +108,7 @@ function NewJobSheet({ onClose }: { onClose: () => void }) {
         })),
         slotStart: new Date(slotStart).toISOString(),
         slaMinutes: Number(slaMinutes) || 240,
-        workLimitMinutes: Number(workLimit) || 120,
+        tier,
         assignedTo: employee
       })
       toast('Job created and assigned', 'ok')
@@ -158,13 +163,18 @@ function NewJobSheet({ onClose }: { onClose: () => void }) {
           value={slotStart}
           onChange={(e) => setSlotStart(e.target.value)}
         />
-        <NumberInput
-          label="Work time limit"
-          suffix="min"
-          value={workLimit}
-          onChange={(e) => setWorkLimit(e.target.value)}
-          hint="The clock starts with the technician's first live photo, not at OTP."
-        />
+        <Select
+          label="Customer credit tier"
+          value={String(tier)}
+          onChange={(e) => setTier(e.target.value === '1' ? 1 : 2)}
+        >
+          <option value="1">Tier 1 · 60 minute visit</option>
+          <option value="2">Tier 2 · 90 minute visit</option>
+        </Select>
+        <p className="-mt-1 text-[11px] leading-4 text-ink-mute">
+          The tier sets the visit window. The clock starts when the customer’s start OTP is
+          verified and covers every service in this visit.
+        </p>
 
         <div className="rounded-xl border border-surface-line bg-white p-3">
           <div className="flex items-center justify-between">

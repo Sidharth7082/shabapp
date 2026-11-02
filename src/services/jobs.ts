@@ -1,8 +1,9 @@
 import { db } from '@/db/db'
 import { newId } from '@/domain/shared/id'
-import { DEFAULT_WORK_LIMIT_MINUTES } from '@/domain/jobs/types'
+import { jobLimitMinutes, tierLimitMinutes } from '@/domain/jobs/types'
 import type {
   ChecklistEntry,
+  CreditTier,
   JobIssue,
   JobKind,
   ServiceItem,
@@ -45,17 +46,11 @@ export async function appendServicePhoto(
 
     const patch: Partial<ServiceJob> = { services }
 
-    // The first live photo is the arrival proof: it starts the visit clock.
-    if (!job.startedAt && job.status !== 'completed' && job.status !== 'cancelled') {
-      const limit = job.workLimitMinutes ?? DEFAULT_WORK_LIMIT_MINUTES
-      const startedAt = new Date()
-      patch.startedAt = startedAt.toISOString()
-      patch.workLimitMinutes = limit
-      patch.workDueAt = new Date(startedAt.getTime() + limit * 60_000).toISOString()
-      patch.status = 'started'
-    } else if (job.startedAt && !job.workDueAt && job.status !== 'completed' && job.status !== 'cancelled') {
-      // Older records may already have a start time but no deadline.
-      const limit = job.workLimitMinutes ?? DEFAULT_WORK_LIMIT_MINUTES
+    // Safety net for visits recorded before the OTP clock existed: if the
+    // visit is already running but has no deadline, derive one. New visits get
+    // their deadline when the customer's start OTP is verified.
+    if (job.startedAt && !job.workDueAt && job.status !== 'completed' && job.status !== 'cancelled') {
+      const limit = jobLimitMinutes(job)
       patch.workLimitMinutes = limit
       patch.workDueAt = new Date(new Date(job.startedAt).getTime() + limit * 60_000).toISOString()
     }
@@ -80,7 +75,6 @@ export async function finishService(
         : service
     )
 
-    const now = new Date().toISOString()
     await db.jobs.update(jobId, {
       services,
       // Re-completing a service replaces its previous findings instead of piling up.
@@ -88,15 +82,40 @@ export async function finishService(
       status:
         job.status === 'assigned' || job.status === 'pending' || job.status === 'en_route'
           ? 'started'
-          : job.status,
-      startedAt: job.startedAt ?? now
+          : job.status
     })
+  })
+}
+
+/**
+ * The customer's start OTP is what starts the visit clock. The window comes
+ * from their credit tier (tier 1 = 60 min, tier 2 = 90 min) and covers every
+ * service in the visit; the deadline is never allowed to move once set.
+ */
+export async function startVisitClock(jobId: string): Promise<void> {
+  await db.transaction('rw', db.jobs, async () => {
+    const job = await db.jobs.get(jobId)
+    if (!job) return
+
+    const verifiedAt = job.otpVerifiedAt ?? new Date().toISOString()
+    const patch: Partial<ServiceJob> = { otpVerifiedAt: verifiedAt }
+
+    if (job.status !== 'completed' && job.status !== 'cancelled' && !job.workDueAt) {
+      const limit = jobLimitMinutes(job)
+      const startedAt = job.startedAt ?? verifiedAt
+      patch.startedAt = startedAt
+      patch.workLimitMinutes = limit
+      patch.workDueAt = new Date(new Date(startedAt).getTime() + limit * 60_000).toISOString()
+      patch.status = 'started'
+    }
+
+    await db.jobs.update(jobId, patch)
   })
 }
 
 export async function completeJob(
   jobId: string,
-  details: { signoffName: string; rating: number }
+  details: { signoffName: string; rating: number; workDoneOtpAt?: string }
 ): Promise<boolean> {
   const job = await db.jobs.get(jobId)
   if (!job) return false
@@ -110,6 +129,7 @@ export async function completeJob(
     checkOutAt: now.toISOString(),
     signoffName: details.signoffName,
     rating: details.rating,
+    workDoneOtpAt: details.workDoneOtpAt ?? job.workDoneOtpAt,
     completedLate: late
   })
   return true
@@ -126,7 +146,7 @@ export interface NewJobInput {
   services: Array<{ name: string; system: string; templateId?: string }>
   slotStart: string
   slaMinutes: number
-  workLimitMinutes: number
+  tier: CreditTier
   assignedTo: string
 }
 
@@ -144,10 +164,8 @@ async function nextCode(): Promise<string> {
 export async function createJob(input: NewJobInput): Promise<ServiceJob> {
   const now = new Date()
   const slaMinutes = Math.min(1440, Math.max(15, Math.round(input.slaMinutes) || 240))
-  const workLimitMinutes = Math.min(
-    720,
-    Math.max(5, Math.round(input.workLimitMinutes) || DEFAULT_WORK_LIMIT_MINUTES)
-  )
+  const tier: CreditTier = input.tier === 1 ? 1 : 2
+  const workLimitMinutes = tierLimitMinutes(tier)
   const job: ServiceJob = {
     id: newId('job'),
     code: await nextCode(),
@@ -172,6 +190,7 @@ export async function createJob(input: NewJobInput): Promise<ServiceJob> {
     })),
     slotStart: input.slotStart,
     slaDue: new Date(new Date(input.slotStart).getTime() + slaMinutes * 60_000).toISOString(),
+    tier,
     workLimitMinutes,
     createdAt: now.toISOString(),
     issues: []

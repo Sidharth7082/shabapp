@@ -48,6 +48,81 @@ export const CHECKLIST_TEMPLATES: ChecklistTemplate[] = [
     ]
   },
   {
+    id: 'cctv',
+    name: 'CCTV checkup',
+    system: 'CCTV',
+    items: [
+      { id: 'cctv-power', label: 'DVR / NVR powers on and status LEDs are normal', critical: true },
+      { id: 'cctv-hdd', label: 'Hard disk health good and free space sufficient', critical: true },
+      { id: 'cctv-live', label: 'Every camera shows a live feed with correct date and time' },
+      { id: 'cctv-image', label: 'Image focus and clarity checked; no lens obstruction' },
+      { id: 'cctv-night', label: 'IR / night vision checked in low light' },
+      { id: 'cctv-playback', label: 'Playback of the last 24 hours verified on sample channels', critical: true },
+      { id: 'cctv-cabling', label: 'Connectors, PoE injectors and cabling secure' },
+      { id: 'cctv-clean', label: 'Lenses and domes cleaned' },
+      { id: 'cctv-remote', label: 'Remote viewing tested with the customer' }
+    ]
+  },
+  {
+    id: 'chimney',
+    name: 'Chimney checkup',
+    system: 'Chimney',
+    items: [
+      { id: 'ch-filter', label: 'Baffle filters removed, degreased and refitted', critical: true },
+      { id: 'ch-hood', label: 'Hood surfaces and oil tray cleaned' },
+      { id: 'ch-duct', label: 'Duct access opened and interior cleaned' },
+      { id: 'ch-fan', label: 'Exhaust blower runs without abnormal noise or vibration' },
+      { id: 'ch-damper', label: 'Fire damper and fusible link intact', critical: true },
+      { id: 'ch-grease', label: 'No grease build-up at duct ends or roof exit' },
+      { id: 'ch-drain', label: 'Oil collection tray clean, no leakage' },
+      { id: 'ch-airflow', label: 'Trial run confirms suction and airflow' }
+    ]
+  },
+  {
+    id: 'ro',
+    name: 'RO checkup',
+    system: 'RO',
+    items: [
+      { id: 'ro-leak', label: 'No leakage at housing, fittings or tubing', critical: true },
+      { id: 'ro-filters', label: 'Sediment and carbon filters replaced per schedule' },
+      { id: 'ro-tds', label: 'TDS before and after measured and recorded', critical: true },
+      { id: 'ro-tank', label: 'Storage tank cleaned and float valve working' },
+      { id: 'ro-pump', label: 'Booster pump pressure and noise normal' },
+      { id: 'ro-uv', label: 'UV stage and indicator functioning' },
+      { id: 'ro-fittings', label: 'Tubing, clamps and tap free of damage' },
+      { id: 'ro-taste', label: 'Final water taste and odour checked with the customer' }
+    ]
+  },
+  {
+    id: 'geyser',
+    name: 'Geyser checkup',
+    system: 'Geyser',
+    items: [
+      { id: 'gy-power', label: 'Power supply, MCB and earthing intact', critical: true },
+      { id: 'gy-thermostat', label: 'Thermostat and thermal cut-out tested', critical: true },
+      { id: 'gy-element', label: 'Heating element current within spec' },
+      { id: 'gy-anode', label: 'Magnesium anode condition checked' },
+      { id: 'gy-tank', label: 'Tank and inlet/outlet connections leak-free' },
+      { id: 'gy-prv', label: 'Pressure relief valve operates freely' },
+      { id: 'gy-temp', label: 'Water reaches the set temperature' },
+      { id: 'gy-scale', label: 'Scale flushed from the tank' }
+    ]
+  },
+  {
+    id: 'meter',
+    name: 'Meter check',
+    system: 'Meter',
+    items: [
+      { id: 'mt-reading', label: 'Meter reading photographed and recorded', critical: true },
+      { id: 'mt-seal', label: 'Meter seal and terminal cover intact' },
+      { id: 'mt-wiring', label: 'Incoming and outgoing wiring tight, no burning' },
+      { id: 'mt-load', label: 'Voltage and current within range under load', critical: true },
+      { id: 'mt-earth', label: 'Earthing continuity verified' },
+      { id: 'mt-display', label: 'Display, billing units and tariff match the bill' },
+      { id: 'mt-tamper', label: 'No tampering, bypass or reverse flow observed' }
+    ]
+  },
+  {
     id: 'fire-alarm',
     name: 'Fire alarm system',
     system: 'Fire Alarm',

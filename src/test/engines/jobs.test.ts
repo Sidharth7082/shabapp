@@ -27,7 +27,7 @@ const job = (overrides: Partial<ServiceJob> = {}): ServiceJob => ({
 })
 
 describe('visit clock helpers', () => {
-  it('counts nothing before the first photo', () => {
+  it('counts nothing until the OTP starts the clock', () => {
     expect(workSeconds(job(), Date.parse('2026-11-02T10:30:00.000Z'))).toBe(0)
   })
 

@@ -2,30 +2,41 @@
 
 ## OTP lifecycle
 
-1. Technician opens a job and taps **Send OTP**. The request carries the job id and the
-   technician's bearer token.
+A visit uses **two separate customer codes**: a start code that unlocks the work and starts
+the paid clock, and a work-done code that must be verified before the visit can close.
+
+1. Technician opens a job and taps **Send OTP** (`purpose: 'start'`). The request carries the
+   job id, the purpose and the technician's bearer token.
 2. `send-otp` confirms the caller is an employee assigned to that job (or a manager),
-   refuses closed jobs, and applies the 5-per-hour rate limit.
+   refuses closed jobs, enforces that the purpose is valid for the job state (a work-done code
+   is only issued once every service is done), and applies the 5-per-hour rate limit.
 3. A 6-digit code is generated with `crypto.getRandomValues`, salted with a UUID and
-   hashed with SHA-256. Only the hash and salt are stored in `otp_challenges`.
+   hashed with SHA-256. Only the hash and salt are stored in `otp_challenges`, keyed by
+   `(job_id, purpose)`.
 4. The code is sent to the customer's phone through MSG91 (SMS) or the WhatsApp Cloud API.
    The response to the app contains only a masked number and the expiry time.
-5. `verify-otp` looks up the newest unconsumed challenge, rejects expired rows, enforces
-   three attempts, compares hashes, then marks the challenge consumed and sets
-   `jobs.otp_verified_at` plus an audit row in `job_events`.
+5. `verify-otp` looks up the newest unconsumed challenge for that purpose, rejects expired
+   rows, enforces three attempts, compares hashes, then marks the challenge consumed and
+   writes an audit row in `job_events`. For `purpose = 'start'` it also stamps
+   `jobs.otp_verified_at`, `started_at` and `work_due_at` (from the customer's credit tier:
+   tier 1 = 60 minutes, tier 2 = 90 minutes). For `purpose = 'complete'` it stamps
+   `jobs.work_done_otp_at` and the job may then be closed.
 
 Rules enforced by the schema and functions:
 
 - 5-minute expiry, single use, three attempts.
-- Only one active challenge per job (trigger expires earlier rows).
+- Two challenges maximum per job (one per purpose); a new code expires the earlier one.
 - OTP rows are revoked from `anon` and `authenticated`; only the service role touches them.
-- Work start is blocked in the UI until `otp_verified_at` is present.
+- Work start is blocked in the UI until `otp_verified_at` is present; completion is blocked
+  until `work_done_otp_at` is present.
 
 ### Demo mode
 
 Without Supabase credentials the app runs `src/services/otp.ts`, which implements the
-same state machine on-device and displays the code in a clearly labelled demo banner.
-That path exists so the flow can be tested; it is not a security boundary.
+same state machine on-device for both purposes (`start` and `complete`) and displays the
+code in a clearly labelled demo banner. That path exists so the flow can be tested; it is
+not a security boundary. Employee sign-in is likewise a demo directory
+(`src/data/employees.ts`) until Supabase Auth lands.
 
 ## Live camera enforcement
 

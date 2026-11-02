@@ -1,6 +1,6 @@
 import { useState, type ReactNode } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { db } from '@/db/db'
 import { Button } from '@/components/ui/Button'
 import { Badge, Card, SectionHeader } from '@/components/ui/display'
@@ -13,10 +13,10 @@ import {
   ClockIcon,
   LayersIcon
 } from '@/components/ui/icons'
-import { Select, TextInput } from '@/components/ui/fields'
+import { NumberInput, TextInput } from '@/components/ui/fields'
 import { toast } from '@/components/ui/toast'
 import { resetDemoData } from '@/db/seed'
-import { useSession, type Role } from '@/services/session'
+import { useSession } from '@/services/session'
 
 function StorageRow({ icon, label, value }: { icon: ReactNode; label: string; value: number }) {
   return (
@@ -55,7 +55,8 @@ function StatusRow({ tone, label, body }: { tone: 'ok' | 'warn' | 'neutral'; lab
 }
 
 export function SettingsScreen() {
-  const { name, role, setName, setRole } = useSession()
+  const { name, role, employeeId, dailyTarget, setName, setDailyTarget, signOut } = useSession()
+  const navigate = useNavigate()
   const jobs = useLiveQuery(() => db.jobs.count(), [])
   const photos = useLiveQuery(() => db.photos.count(), [])
   const estimates = useLiveQuery(() => db.estimates.count(), [])
@@ -101,7 +102,7 @@ export function SettingsScreen() {
               {name || 'Technician'}
             </p>
             <p className="text-[11px] text-ink-mute">
-              {role === 'admin' ? 'Manager · full access' : 'Technician · assigned jobs'}
+              {employeeId || 'No account'} · {role === 'admin' ? 'Manager' : 'Technician'}
             </p>
           </div>
           <Badge tone={role === 'admin' ? 'brand' : 'neutral'}>{role}</Badge>
@@ -109,10 +110,25 @@ export function SettingsScreen() {
 
         <div className="mt-4 space-y-3">
           <TextInput label="Name" value={name} onChange={(event) => setName(event.target.value)} />
-          <Select label="Role" value={role} onChange={(event) => setRole(event.target.value as Role)}>
-            <option value="technician">Technician</option>
-            <option value="admin">Admin</option>
-          </Select>
+          {role === 'technician' && (
+            <NumberInput
+              label="Shift target"
+              suffix="services / day"
+              value={String(dailyTarget)}
+              onChange={(event) => setDailyTarget(Number(event.target.value))}
+              hint="The job board counts today's closed services against this target."
+            />
+          )}
+          <Button
+            variant="secondary"
+            full
+            onClick={() => {
+              signOut()
+              navigate('/login', { replace: true })
+            }}
+          >
+            Sign out
+          </Button>
         </div>
       </Card>
 

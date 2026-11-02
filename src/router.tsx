@@ -1,6 +1,7 @@
 import { lazy } from 'react'
 import { createBrowserRouter } from 'react-router-dom'
 import { AppShell } from '@/components/layout/AppShell'
+import { LoginScreen } from '@/features/auth/LoginScreen'
 
 /**
  * Screens are split by route so the field workflow ships first and the
@@ -49,6 +50,7 @@ const SettingsScreen = lazy(() =>
 
 export const router = createBrowserRouter(
   [
+    { path: '/login', element: <LoginScreen /> },
     {
       path: '/',
       element: <AppShell />,

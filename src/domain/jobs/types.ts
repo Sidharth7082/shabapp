@@ -4,6 +4,19 @@ export type ServiceStatus = 'pending' | 'in_progress' | 'done'
 export type ChecklistResult = 'pass' | 'fail' | 'na'
 export type IssueSeverity = 'minor' | 'major' | 'critical'
 
+/**
+ * Customer credit tier. Tier 1 customers get a shorter visit window than
+ * tier 2, so the technician can plan the day around the clock.
+ */
+export type CreditTier = 1 | 2
+
+export const TIER_LIMITS_MINUTES: Record<CreditTier, number> = { 1: 60, 2: 90 }
+
+export const TIER_LABEL: Record<CreditTier, string> = {
+  1: 'Tier 1 · 60 min',
+  2: 'Tier 2 · 90 min'
+}
+
 export interface ChecklistEntry {
   itemId: string
   result: ChecklistResult
@@ -50,12 +63,16 @@ export interface ServiceJob {
   slotStart: string
   slaDue: string
   createdAt: string
-  /** Minutes allowed for the whole visit, counted from the first photo. */
+  /** Customer credit tier; tier 1 = 60 min, tier 2 = 90 min. */
+  tier?: CreditTier
+  /** Minutes allowed for the whole visit, counted from OTP verification. */
   workLimitMinutes?: number
-  /** Absolute deadline set when the first photo starts the clock. */
+  /** Absolute deadline set when the start OTP is verified. */
   workDueAt?: string
   completedLate?: boolean
   otpVerifiedAt?: string
+  /** Set when the customer's work-done OTP is verified at the end of the visit. */
+  workDoneOtpAt?: string
   startedAt?: string
   completedAt?: string
   checkIn?: { lat: number; lng: number; accuracy: number; at: string }
@@ -107,7 +124,37 @@ export function openIssues(job: Pick<ServiceJob, 'issues'>): JobIssue[] {
   return job.issues.filter((issue) => !issue.resolvedAt)
 }
 
-export const DEFAULT_WORK_LIMIT_MINUTES = 120
+export const DEFAULT_WORK_LIMIT_MINUTES = TIER_LIMITS_MINUTES[2]
+
+export function tierLimitMinutes(tier: CreditTier | undefined): number {
+  return TIER_LIMITS_MINUTES[tier ?? 2]
+}
+
+/** The visit window in force for a job: explicit limit wins, else the tier. */
+export function jobLimitMinutes(
+  job: Pick<ServiceJob, 'tier' | 'workLimitMinutes'>
+): number {
+  return job.workLimitMinutes ?? tierLimitMinutes(job.tier)
+}
+
+/** Services the technician closed on a given day (the shift-target counter). */
+export function completedServicesOn(
+  jobs: Array<Pick<ServiceJob, 'services'>>,
+  day = new Date()
+): number {
+  return jobs.reduce((total, job) => {
+    const done = job.services.filter((service) => {
+      if (!service.completedAt) return false
+      const closed = new Date(service.completedAt)
+      return (
+        closed.getFullYear() === day.getFullYear() &&
+        closed.getMonth() === day.getMonth() &&
+        closed.getDate() === day.getDate()
+      )
+    }).length
+    return total + done
+  }, 0)
+}
 
 export function workSeconds(job: Pick<ServiceJob, 'startedAt' | 'completedAt'>, now = Date.now()): number {
   if (!job.startedAt) return 0

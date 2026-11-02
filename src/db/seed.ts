@@ -1,6 +1,6 @@
 import { db, settingGet, settingSet } from './db'
-import { DEFAULT_WORK_LIMIT_MINUTES } from '@/domain/jobs/types'
-import type { ServiceItem, ServiceJob } from '@/domain/jobs/types'
+import { tierLimitMinutes } from '@/domain/jobs/types'
+import type { CreditTier, ServiceItem, ServiceJob } from '@/domain/jobs/types'
 
 const MIN = 60_000
 const HOUR = 60 * MIN
@@ -121,6 +121,7 @@ function seed(): ServiceJob[] {
       otpVerifiedAt: iso(-DAY - 100 * MIN),
       startedAt: iso(-DAY - 95 * MIN),
       checkIn: { lat: 28.5355, lng: 77.391, accuracy: 18, at: iso(-DAY - 100 * MIN) },
+      workDoneOtpAt: iso(-DAY - 22 * MIN),
       completedAt: iso(-DAY - 20 * MIN),
       checkOutAt: iso(-DAY - 18 * MIN),
       signoffName: 'Sandeep Yadav',
@@ -175,13 +176,38 @@ function seed(): ServiceJob[] {
       slaDue: iso(7 * HOUR),
       createdAt: iso(-HOUR),
       issues: []
+    },
+    {
+      id: 'job_seed_7',
+      code: 'SH-1051',
+      customerName: 'Green Park Villas',
+      contactName: 'Rakesh Gupta',
+      phone: '9836677889',
+      address: 'Villa 24, Sector 50, Noida',
+      area: 'Sector 50',
+      kind: 'amc',
+      priority: 'normal',
+      status: 'assigned',
+      assignedTo: EMPLOYEE,
+      services: [
+        service('svc_7_1', 'CCTV checkup - 8 cameras', 'CCTV', 'cctv'),
+        service('svc_7_2', 'Chimney deep clean', 'Chimney', 'chimney'),
+        service('svc_7_3', 'RO filter service', 'RO', 'ro'),
+        service('svc_7_4', 'Geyser checkup', 'Geyser', 'geyser'),
+        service('svc_7_5', 'Meter check', 'Meter', 'meter')
+      ],
+      slotStart: iso(5 * HOUR),
+      slaDue: iso(8 * HOUR),
+      createdAt: iso(-30 * MIN),
+      issues: []
     }
   ]
 
-  return base.map((job, index) => ({
-    ...job,
-    workLimitMinutes: [90, 120, 60, 150, 120, 90][index] ?? DEFAULT_WORK_LIMIT_MINUTES
-  }))
+  const tiers: CreditTier[] = [2, 2, 1, 2, 2, 2, 1]
+  return base.map((job, index) => {
+    const tier = tiers[index] ?? 2
+    return { ...job, tier, workLimitMinutes: tierLimitMinutes(tier) }
+  })
 }
 
 let seeding: Promise<void> | null = null

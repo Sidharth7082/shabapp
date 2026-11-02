@@ -18,10 +18,12 @@ verified in a browser or by a test, label it "implemented, not yet verified".
 
 - **Camera only** for proof photos: never add `<input type="file">`, gallery pickers or
   drag-drop uploads. Capture path: `src/features/camera/`.
-- **Visit clock starts on the first photo**, not OTP (`appendServicePhoto` in
-  `src/services/jobs.ts`). Late visits are flagged, never blocked.
+- **Two OTPs per visit.** The customer's start OTP starts the visit clock (`startVisitClock` in
+  `src/services/jobs.ts`) and unlocks services; the work-done OTP is required before the job can
+  be closed. Windows come from the customer tier: tier 1 = 60 min, tier 2 = 90 min.
 - **Unpriced SKUs say "Rate required"**, never ₹0. Estimates keep the preliminary disclaimer.
-- **OTP here is a demo** — never present it as secure. Production = Supabase + MSG91.
+- **OTP and employee login here are demos** — never present them as secure. Production =
+  Supabase Auth + edge functions + MSG91.
 - **Geolocation is fire-and-forget**; never await it when verifying OTP or completing a job.
 - Job/service writes go through `db.transaction('rw', db.jobs, …)`.
 - Keep the technician role out of `/admin`; keep screens lazy-loaded in `src/router.tsx`.

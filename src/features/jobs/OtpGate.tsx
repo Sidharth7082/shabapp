@@ -62,7 +62,7 @@ export function OtpGate({ job, onVerified }: { job: ServiceJob; onVerified: () =
 
       // Record where the work actually started, without delaying the gate.
       setPhase('verified')
-      toast('OTP verified. You can start work.', 'ok')
+      toast('OTP verified — the visit clock has started.', 'ok')
       onVerified()
       void getPosition(6000).then((position) => {
         if (position.point) void patchJob(job.id, { checkIn: position.point })
@@ -84,7 +84,8 @@ export function OtpGate({ job, onVerified }: { job: ServiceJob; onVerified: () =
           </span>
         </div>
         <p className="mt-1.5 text-xs leading-5 text-ink-soft">
-          Customer authorisation recorded. Live before/after photos are required for each service.
+          Customer authorisation recorded and the visit clock is running. Live before/after photos
+          are required for each service.
         </p>
       </Card>
     )
@@ -94,7 +95,8 @@ export function OtpGate({ job, onVerified }: { job: ServiceJob; onVerified: () =
     <Card className="p-4">
       <h2 className="text-base font-bold text-ink">Start work with customer OTP</h2>
       <p className="mt-1 text-sm leading-6 text-ink-mute">
-        The customer receives a 6-digit code. Work cannot start until it is entered here.
+        The customer receives a 6-digit code. Verifying it starts the visit clock and unlocks every
+        service in this visit.
       </p>
 
       {phase === 'idle' ? (

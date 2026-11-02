@@ -49,15 +49,18 @@ A task is done only when all of these are true:
 1. **Camera only.** Never add `<input type="file">`, gallery pickers or drag-drop uploads for
    proof photos. Capture path: `src/features/camera/CameraCapture.tsx` (getUserMedia → canvas →
    `watermark.ts`).
-2. **The visit clock starts on the first photo**, not on OTP. See `appendServicePhoto` in
-   `src/services/jobs.ts`.
-3. **Late is flagged, never blocked.** Technicians can always finish a visit.
-4. **Never show ₹0 for an unpriced SKU** — show "Rate required".
-5. **Every estimate keeps the preliminary disclaimer.**
-6. **OTP in this repo is a demo.** Never describe it as secure; production path is Supabase
-   edge functions + MSG91/WhatsApp.
-7. **Geolocation is fire-and-forget.** Never await it in a completion or OTP path.
-8. **Job/service mutations are transactional** (`db.transaction('rw', db.jobs, …)`).
+2. **The visit clock starts when the customer's start OTP is verified**, not on the first photo.
+   See `startVisitClock` in `src/services/jobs.ts`; the window comes from the customer's credit
+   tier (tier 1 = 60 min, tier 2 = 90 min).
+3. **A visit needs two OTPs:** the start code unlocks the services and starts the clock; the
+   work-done code is required before `CompleteJobSheet` can close the job.
+4. **Late is flagged, never blocked.** Technicians can always finish a visit.
+5. **Never show ₹0 for an unpriced SKU** — show "Rate required".
+6. **Every estimate keeps the preliminary disclaimer.**
+7. **OTP and login in this repo are demos.** Never describe them as secure; production path is
+   Supabase Auth + edge functions + MSG91/WhatsApp.
+8. **Geolocation is fire-and-forget.** Never await it in a completion or OTP path.
+9. **Job/service mutations are transactional** (`db.transaction('rw', db.jobs, …)`).
 
 ## 5. Commands
 
@@ -66,7 +69,7 @@ npm install
 npm run setup:hooks   # installs the PLAN.md pre-commit guard (run once per clone)
 npm run dev            # http://127.0.0.1:5173
 npx tsc --noEmit       # typecheck (tsc -b fails: no composite project)
-npm test               # 27 engine/helper tests
+npm test               # 33 engine/helper tests
 npm run build          # tsc --noEmit && vite build (PWA precache)
 node scripts/make-icons.mjs   # regenerate placeholder icons
 ```

@@ -8,7 +8,7 @@
 - **Last updated:** 2026-11-02
 - **Stage:** Phase 1 complete — production-ready offline PWA. Phase 2 (real OTP + multi-device
   sync) is next and is blocked on credentials.
-- **Health:** `npx tsc --noEmit` clean · `npm test` 27/27 pass · `npm run build` ok
+- **Health:** `npx tsc --noEmit` clean · `npm test` 33/33 pass · `npm run build` ok
 - **Repo:** private GitHub repo `shabapp` (see README for how to clone)
 
 ## 1. What we are building
@@ -16,12 +16,14 @@
 One app for a Shabh Creations field employee, combining two jobs that today live in different
 places:
 
-1. **Service operations (Blinkit-style)** — the employee sees how many services are pending,
-   opens a visit, gets the customer's OTP, then must capture **live** before/after photos
-   (gallery uploads are impossible by design). A house visit can contain many services
-   (AC service, solar-panel cleaning, fire-alarm checks, extinguishers, sprinklers, pumps).
-   The visit clock starts on the **first photo**, not on OTP, and the technician is expected
-   to finish every service inside the allowed window.
+1. **Service operations (Blinkit-style)** — the employee signs in with an employee ID and PIN,
+   sees today's visits and a shift target (default 12 services), opens a visit and checks what
+   is already done. The customer's **start OTP** must be verified before any work; verifying it
+   starts the visit clock. Customers sit in **credit tiers**: tier 1 gets a 60-minute visit,
+   tier 2 gets 90 minutes. After the OTP the technician captures **live** before/after photos
+   for every service (gallery uploads are impossible by design). A second **work-done OTP**
+   from the customer is required before the visit can be closed. A house visit can contain many
+   services (AC service, solar-panel cleaning, CCTV, chimney, RO, geyser, meter, fire systems).
 2. **Estimates** — the four BOQ calculators recovered from `shabhcreations.com` (gas
    suppression, fire alarm, quotation builder, AMC) running offline with the real catalog,
    HSN codes and 18% GST.
@@ -36,11 +38,15 @@ offline-first on IndexedDB and installs as a PWA; an Android wrapper via Capacit
 
 | Area | State | Notes / evidence |
 | --- | --- | --- |
-| Job board, pending-service counts, SLA chips | **Live** | Seeded + created jobs, role-aware nav |
-| Multi-service visit (AC, solar, fire, extinguishers, sprinklers, pumps, gas) | **Live** | 8 checklist templates |
-| Customer OTP gate before work starts | **Demo** | Code generated on-device and shown in a labelled banner — **not** a security boundary |
-| Live camera capture + burned watermark (job, service, employee, time, GPS) | **Live** | Zero file inputs in the bundle (CI-checked) |
-| Visit clock: first photo starts it, per-visit deadline, late flag | **Live** | Verified on SH-1048: `1h 30m left · limit 90 min` |
+| Job board, pending-service counts, today's visits, SLA chips | **Live** | Seeded + created jobs, role-aware nav |
+| Employee sign-in with employee ID + PIN | **Demo** | Verified: wrong PIN rejected, technician and manager open different roles, sign-out returns to `/login` |
+| Shift target (default 12 services/day) with progress card | **Live** | Verified: 5 closed services showed `5 / 12` and `5 to go` |
+| Customer credit tiers: tier 1 = 60 min, tier 2 = 90 min | **Live** | Verified: SH-1051 tier 1 created with a 60-minute window; control room offers both tiers |
+| Multi-service visit (AC, solar, CCTV, chimney, RO, geyser, meter, fire systems) | **Live** | 13 checklist templates; SH-1051 holds CCTV, chimney, RO, geyser and meter |
+| Start OTP gate before work | **Demo** | Verified: code issued, services locked until verify, `otpVerifiedAt` recorded |
+| Visit clock: starts when the start OTP is verified, per-visit deadline, late flag | **Live** | Verified on SH-1051: `startedAt`/`workDueAt` exactly 60 min apart, timer `59m 59s`, deadline `10:04 pm` |
+| Work-done OTP required to close the visit | **Demo** | Verified: footer blocked until the second code; verify set `workDoneOtpAt`; visit closed with sign-off and `completedLate` flagged |
+| Live camera capture + burned watermark (before + after per service) | **Live** | Zero file inputs in the bundle (CI-checked) |
 | Checklists with Pass / Fail / N/A, issue capture | **Live** | Re-opening a service restores 9/9 states |
 | Completion sign-off + rating | **Live** | Blocked until every service is done |
 | Gas suppression engine (NFPA 2001) | **Live** | 5×4×3 m Novec Class C + 10 m run = 42.0 kg, 80 L Ansul, ₹3,02,596.84 |
@@ -61,8 +67,11 @@ offline-first on IndexedDB and installs as a PWA; an Android wrapper via Capacit
 
 1. **No file inputs anywhere.** Photos only from `getUserMedia` → canvas → burned watermark.
    CI fails if `type:"file"` appears in `dist/assets/*.js`.
-2. **The visit clock starts on the first photo**, never on OTP. `appendServicePhoto` stamps
-   `startedAt` and `workDueAt = startedAt + workLimitMinutes`.
+2. **The visit clock starts when the customer's start OTP is verified**, never on the first
+   photo. `startVisitClock` stamps `startedAt` and `workDueAt = startedAt + tierLimit`, where
+   tier 1 = 60 minutes and tier 2 = 90 minutes.
+3. **A visit needs two customer OTPs:** the start code unlocks every service and starts the
+   clock; the work-done code must be verified before the visit can be closed.
 3. **Late is flagged, never blocked.** `completeJob` sets `completedLate`; technicians can
    always finish and report the truth.
 4. **Unpriced items are flagged "Rate required"**, never shown as ₹0.
@@ -83,9 +92,15 @@ offline-first on IndexedDB and installs as a PWA; an Android wrapper via Capacit
 ### Phase 1 — Offline employee app ✅
 - [x] Vite + React + TS + Tailwind design system (brand green, ink/surface, 48 px taps)
 - [x] Dexie data model for jobs, services, photos, estimates, settings
-- [x] Job board, job detail, timeline, call/navigate actions
-- [x] OTP demo gate, live-camera proof, watermarks, multi-service visit flow
-- [x] Visit clock, deadline, late flag, dashboard chips
+- [x] Employee sign-in (demo directory) with route guard and sign-out
+- [x] Job board with today's visits, shift target and progress card
+- [x] Job detail, timeline, call/navigate actions
+- [x] Credit tiers (60/90 min) that set the visit window
+- [x] Start OTP gate that starts the visit clock, and live-camera proof
+- [x] Work-done OTP before a visit can be closed
+- [x] Multi-service visit flow with before/after proof per service
+- [x] CCTV, chimney, RO, geyser and meter checklist templates
+- [x] Deadline, late flag, dashboard chips
 - [x] Control room (create/assign/delete), role gating, reset demo data
 - [x] Insights dashboard
 - [x] Four estimate tools + saved estimates
@@ -97,6 +112,8 @@ offline-first on IndexedDB and installs as a PWA; an Android wrapper via Capacit
 
 ### Phase 2 — Production backend 🔜 (next)
 - [ ] Create Supabase project and apply `supabase/migrations/0001..0003`
+- [ ] Supabase Auth for employees; `profiles` row carries role + daily target
+- [ ] Two OTP purposes server-side (`start`, `complete`), gated by job state
 - [ ] Deploy `send-otp` / `verify-otp` edge functions
 - [ ] Configure MSG91 (or WhatsApp Cloud API) secrets + DLT template for India
 - [ ] Remove `demoCode` from the client path; server-side attempts/rate limits/expiry audit
@@ -130,27 +147,31 @@ offline-first on IndexedDB and installs as a PWA; an Android wrapper via Capacit
 | # | Item | Priority | Blocked on | Est. |
 | --- | --- | --- | --- | --- |
 | 1 | Supabase project + migrations + edge functions | P0 | User's Supabase account/keys | 0.5 day |
-| 2 | MSG91 SMS delivery + DLT template | P0 | User's MSG91 account, DLT registration | 0.5 day |
-| 3 | Remove demo OTP, server-side limits | P0 | #1, #2 | 0.5 day |
-| 4 | Sync engine (jobs + estimates) | P1 | #1 | 2–3 days |
-| 5 | Photo upload queue → Supabase Storage | P1 | #1, #4 | 1–2 days |
-| 6 | AMC rate-card values | P1 | **User to supply rates** | 0.5 day |
-| 7 | Capacitor Android build | P1 | Android SDK / Play Console | 1–2 days |
-| 8 | Real brand icon + splash | P2 | User to supply logo | 0.5 day |
-| 9 | PDF quotation export | P2 | Company letterhead + GST details | 1 day |
-| 10 | Manager analytics v2, reassignment | P2 | #4 | 3 days |
-| 11 | Customer e-signature + NPS | P3 | — | 1 day |
-| 12 | Hindi strings, dark mode | P3 | — | 2 days |
+| 2 | Supabase Auth replacing the demo employee login (role + shift target) | P0 | #1 | 0.5 day |
+| 3 | MSG91 SMS delivery + DLT template | P0 | User's MSG91 account, DLT registration | 0.5 day |
+| 4 | Server-side start/work-done OTP state machine, remove demo codes | P0 | #1, #3 | 1 day |
+| 5 | Sync engine (jobs + estimates) | P1 | #1 | 2–3 days |
+| 6 | Photo upload queue → Supabase Storage | P1 | #1, #5 | 1–2 days |
+| 7 | AMC rate-card values | P1 | **User to supply rates** | 0.5 day |
+| 8 | Capacitor Android build | P1 | Android SDK / Play Console | 1–2 days |
+| 9 | Real brand icon + splash | P2 | User to supply logo | 0.5 day |
+| 10 | PDF quotation export | P2 | Company letterhead + GST details | 1 day |
+| 11 | Manager analytics v2, reassignment | P2 | #5 | 3 days |
+| 12 | Customer e-signature + NPS | P3 | — | 1 day |
+| 13 | Hindi strings, dark mode | P3 | — | 2 days |
 
 ## 6. Open questions for the user
 
-1. **AMC rates** — the site publishes none. Need a rate card (per visit / per device / per
+1. **Credit tiers** — are tier 1 = 60 min and tier 2 = 90 min final, or does a tier 3 exist?
+2. **Shift target** — is 12 the number of **services** or of **visits** per shift? The board
+   currently counts services (a 5-service visit adds 5).
+3. **AMC rates** — the site publishes none. Need a rate card (per visit / per device / per
    system) or we keep it manual.
-2. **OTP channel** — SMS via MSG91, WhatsApp Cloud API, or both? India requires a DLT-approved
+4. **OTP channel** — SMS via MSG91, WhatsApp Cloud API, or both? India requires a DLT-approved
    template for transactional SMS.
-3. **Company details for PDFs** — GSTIN, address, logo file, authorised-signatory block.
-4. **Android** — Play Store release or direct APK distribution? Minimum Android version?
-5. **Photo retention** — how long should before/after photos be kept on device / in cloud?
+5. **Company details for PDFs** — GSTIN, address, logo file, authorised-signatory block.
+6. **Android** — Play Store release or direct APK distribution? Minimum Android version?
+7. **Photo retention** — how long should before/after photos be kept on device / in cloud?
 
 ## 7. Known limitations / risks
 
@@ -169,7 +190,7 @@ offline-first on IndexedDB and installs as a PWA; an Android wrapper via Capacit
 
 ```bash
 npx tsc --noEmit      # must be clean (tsc -b does not work here)
-npm test              # 27 tests, engine golden values
+npm test              # 33 tests, engine golden values + tier/shift helpers
 npm run build         # production build + PWA precache
 grep -o 'type:"file"' dist/assets/*.js | wc -l   # must print 0
 ```
@@ -202,6 +223,24 @@ This file is maintained by **rules, not by memory**:
 7. Never delete old changelog entries; append.
 
 ## 10. Changelog
+
+### 2026-11-02 — Field operations model v2
+- Added employee sign-in (demo directory, route guard, sign-out) and a shift target card
+  (services closed today vs 12).
+- Customer credit tiers: tier 1 = 60 min, tier 2 = 90 min, set in the control room.
+- **Rule change:** the visit clock now starts when the customer's start OTP is verified, not on
+  the first photo (`startVisitClock`); `appendServicePhoto` no longer touches the clock.
+- Added a second **work-done OTP** that must be verified before a visit can close
+  (`workDoneOtpAt`, `CompleteJobSheet`, timeline step).
+- Added CCTV, chimney, RO, geyser and meter checklist templates and systems (13 templates).
+- Seed board now has seven visits incl. a 5-service CCTV/chimney/RO/geyser/meter house visit.
+- Tests 27 → 33 (tier windows, shift counter).
+- Fixed the missing-photo placeholder (shows “Photo” instead of an endless “Loading”).
+- Verified in the browser: demo sign-in (wrong PIN rejected, two roles), shift card `5 / 12`,
+  SH-1051 tier badge `Tier 1 · 60 min`, start OTP → `59m 59s` left with a 60-minute deadline,
+  work-done OTP gate → completed visit with `workDoneOtpAt` and late flag, control-room job
+  creation `SH-1052` at tier 1 (60 min). `npx tsc --noEmit` clean, 33/33 tests, build ok,
+  0 file inputs.
 
 ### 2026-11-02 — Repository + plan governance
 - Published the app as the private GitHub repo `shabapp` (`main` only).

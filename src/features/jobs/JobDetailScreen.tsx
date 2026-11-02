@@ -18,6 +18,7 @@ import {
   JOB_KIND_LABEL,
   JOB_STATUS_LABEL,
   isJobComplete,
+  jobLimitMinutes,
   servicesDone,
   type ServiceItem,
   type ServiceJob
@@ -118,8 +119,8 @@ function ServiceRow({
 function StatusTimeline({ job }: { job: ServiceJob }) {
   const steps = [
     { label: 'Assigned', at: job.createdAt, done: true },
-    { label: 'OTP', at: job.otpVerifiedAt, done: Boolean(job.otpVerifiedAt) },
-    { label: 'Started', at: job.startedAt, done: Boolean(job.startedAt) },
+    { label: 'Start OTP', at: job.otpVerifiedAt, done: Boolean(job.otpVerifiedAt) },
+    { label: 'Work OTP', at: job.workDoneOtpAt, done: Boolean(job.workDoneOtpAt) },
     { label: 'Closed', at: job.completedAt, done: Boolean(job.completedAt) }
   ]
 
@@ -234,6 +235,9 @@ export function JobDetailScreen() {
                   {JOB_STATUS_LABEL[job.status]}
                 </Badge>
                 <Badge tone="brand">{JOB_KIND_LABEL[job.kind]}</Badge>
+                <Badge tone="info">
+                  Tier {job.tier ?? 2} · {jobLimitMinutes(job)} min
+                </Badge>
                 {job.priority === 'urgent' && <Badge tone="danger">Urgent</Badge>}
               </div>
               <h1 className="mt-2 text-[22px] font-extrabold leading-tight tracking-tight text-ink">
@@ -312,7 +316,7 @@ export function JobDetailScreen() {
         <div className="flex items-center justify-between">
           <h2 className="text-[15px] font-bold tracking-tight text-ink">Services in this visit</h2>
           <span className="tabular text-[11px] font-bold text-ink-mute">
-            {done}/{total} done
+            {done}/{total} done · {total - done} pending
           </span>
         </div>
         {job.services.map((service, index) => (
@@ -378,7 +382,7 @@ export function JobDetailScreen() {
             className="shadow-elevated"
           >
             {allDone
-              ? 'Complete job & sign off'
+              ? 'Take work-done OTP & close'
               : `Finish ${total - done} more service${total - done === 1 ? '' : 's'}`}
           </Button>
         </div>
@@ -394,6 +398,7 @@ export function JobDetailScreen() {
               <p className="text-[13px] font-bold text-ok">Job completed</p>
               <p className="text-[11px] leading-4 text-ink-soft">
                 {total} service{total === 1 ? '' : 's'} closed with live photo evidence
+                {job.workDoneOtpAt ? ' and the customer\u2019s work-done OTP' : ''}
                 {job.signoffName ? ` · accepted by ${job.signoffName}` : ''}
               </p>
             </div>

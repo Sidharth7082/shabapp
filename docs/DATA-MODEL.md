@@ -20,8 +20,9 @@ ServiceJob
   priority: normal | urgent
   status: pending | assigned | en_route | started | completed | cancelled
   assignedTo, slotStart, slaDue, createdAt
+  tier: 1 | 2 (60 min | 90 min visit window)
   workLimitMinutes, workDueAt, completedLate
-  otpVerifiedAt, startedAt, completedAt, checkOutAt
+  otpVerifiedAt, workDoneOtpAt, startedAt, completedAt, checkOutAt
   checkIn { lat, lng, accuracy, at }
   signoffName, rating
   services: ServiceItem[]
@@ -31,11 +32,14 @@ ServiceJob
 `ServiceItem` holds one service inside a multi-service visit: name, system, checklist
 template, status, `ChecklistEntry[]`, before/after photo ids, timestamps.
 
-**Visit clock.** `workLimitMinutes` is set when the job is created. `startedAt` and
-`workDueAt` are stamped by `appendServicePhoto` the first time any photo is stored for
-the job — never by the OTP step. `completedLate` is derived at sign-off. A visit can own
-any number of services (AC service, solar panel cleaning, fire checks) and all of them
-must close before the job can be completed; going past `workDueAt` flags the visit
+**Visit clock.** `tier` is chosen when the job is created and decides the window
+(tier 1 = 60 minutes, tier 2 = 90 minutes). Verifying the customer's **start OTP** calls
+`startVisitClock`, which stamps `otpVerifiedAt`, `startedAt` and
+`workDueAt = startedAt + tierLimit` and moves the status to `started`. Photos never start
+the clock. At the end, a second **work-done OTP** stamps `workDoneOtpAt`; only then can
+`completeJob` run, which sets `completedAt` and derives `completedLate`. A visit can own
+any number of services (AC, solar, CCTV, chimney, RO, geyser, meter, fire systems) and all
+of them must close before the job can be completed; going past `workDueAt` flags the visit
 instead of trapping the technician.
 (minor/major/critical), description and an evidence photo id.
 

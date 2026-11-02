@@ -1,6 +1,7 @@
 import type { ServiceJob } from '@/domain/jobs/types'
 import { db } from '@/db/db'
 import { newId } from '@/domain/shared/id'
+import { startVisitClock } from '@/services/jobs'
 
 /**
  * OTP gate.
@@ -18,8 +19,16 @@ const OTP_TTL_MS = 5 * 60_000
 const MAX_ATTEMPTS = 3
 const LOCK_MS = 60_000
 
+/** A visit has two customer codes: one to start work, one to accept it. */
+export type OtpPurpose = 'start' | 'complete'
+
+function recordKey(jobId: string, purpose: OtpPurpose): string {
+  return `${jobId}:${purpose}`
+}
+
 interface OtpRecord {
   jobId: string
+  purpose: OtpPurpose
   phone: string
   codeHash: string
   salt: string
@@ -65,12 +74,16 @@ export interface OtpRequestResult {
   demoCode?: string
 }
 
-export async function requestOtp(job: Pick<ServiceJob, 'id' | 'phone'>): Promise<OtpRequestResult> {
+export async function requestOtp(
+  job: Pick<ServiceJob, 'id' | 'phone'>,
+  purpose: OtpPurpose = 'start'
+): Promise<OtpRequestResult> {
   const now = Date.now()
   const salt = randomSalt()
   const code = randomDigits(6)
   const record: OtpRecord = {
     jobId: job.id,
+    purpose,
     phone: job.phone,
     codeHash: await hashCode(code, salt),
     salt,
@@ -79,7 +92,7 @@ export async function requestOtp(job: Pick<ServiceJob, 'id' | 'phone'>): Promise
     attempts: 0,
     lockedUntil: 0
   }
-  records.set(job.id, record)
+  records.set(recordKey(job.id, purpose), record)
 
   return {
     sentTo: maskPhone(job.phone),
@@ -93,8 +106,12 @@ export type OtpVerifyResult =
   | { ok: true }
   | { ok: false; reason: 'missing' | 'expired' | 'locked' | 'wrong' | 'exhausted'; attemptsLeft?: number }
 
-export async function verifyOtp(jobId: string, code: string): Promise<OtpVerifyResult> {
-  const record = records.get(jobId)
+export async function verifyOtp(
+  jobId: string,
+  code: string,
+  purpose: OtpPurpose = 'start'
+): Promise<OtpVerifyResult> {
+  const record = records.get(recordKey(jobId, purpose))
   if (!record) return { ok: false, reason: 'missing' }
 
   const now = Date.now()
@@ -116,7 +133,12 @@ export async function verifyOtp(jobId: string, code: string): Promise<OtpVerifyR
   }
 
   record.verifiedAt = now
-  await db.jobs.update(jobId, { otpVerifiedAt: new Date(now).toISOString() })
+  if (purpose === 'start') {
+    // Verifying the start code is the moment the paid clock begins.
+    await startVisitClock(jobId)
+  } else {
+    await db.jobs.update(jobId, { workDoneOtpAt: new Date(now).toISOString() })
+  }
   return { ok: true }
 }
 

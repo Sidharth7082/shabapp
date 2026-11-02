@@ -2,9 +2,10 @@
 
 Field service app for Shabh Creations. One employee app with two modules:
 
-1. **Services** — a Blinkit-style job board with pending-service counts, a customer OTP
-   gate before work starts, live-camera-only photo proof, and many services inside a
-   single house visit.
+1. **Services** — an employee signs in, sees today's visits and a shift target (default 12
+   services), verifies the customer's start OTP (which starts the visit clock), captures live
+   before/after proof for every service, then takes a separate **work-done OTP** to close the
+   visit. Customers sit in credit tiers: tier 1 gets a 60-minute visit, tier 2 gets 90 minutes.
 2. **Estimates** — the four BOQ calculators recovered from shabhcreations.com, with the
    real catalog, HSN codes and GST, plus an editable rate card for AMC.
 
@@ -24,27 +25,33 @@ npm run build        # typecheck + production build
 npm test             # engine golden tests
 ```
 
-The app opens with six demo jobs. Settings → **Reset demo data** restores them.
+The app opens with seven demo jobs. Sign in with the technician demo (`EMP-1042` / PIN
+`1234`) or the manager demo (`MGR-1001` / PIN `1234`). Settings → **Reset demo data**
+restores the seeded board.
 
 ## What runs where
 
 | Area | State |
 | --- | --- |
-| Job board, pending counts, SLA chips | Live, local-first |
-| Multi-service visits (AC service, solar cleaning, fire checks) | Live |
-| Visit clock: starts on the first photo, hard deadline per visit | Live |
+| Employee sign-in with ID + PIN | **Demo** — local directory, pinned to Supabase Auth in Phase 2 |
+| Job board, pending counts, today's visits, shift target (12/day) | Live, local-first |
+| Multi-service visits (AC, solar, CCTV, chimney, RO, geyser, meter, fire systems) | Live, 13 checklist templates |
+| Customer credit tiers: tier 1 = 60 min, tier 2 = 90 min | Live |
+| Visit clock: starts when the start OTP is verified, hard deadline per visit | Live |
+| Work-done OTP before the visit can be closed | **Demo** — same local state machine as the start OTP |
 | Checklists, issues | Live |
-| Live camera capture + burned watermark | Live |
+| Live camera capture + burned watermark (before + after per service) | Live |
 | BOQ engines (gas, fire alarm, quotation, AMC) | Live, unit-tested |
-| Control room (create/assign jobs) | Live for this device |
+| Control room (create/assign jobs, pick tier) | Live for this device |
 | Customer OTP | **Demo** — generated on-device and shown in a labelled banner |
 | Supabase sync, SMS/WhatsApp delivery, multi-manager analytics | **Pending** — schema and functions included |
 
 ## Routes
 
 ```
-/                    Jobs board (technician home)
-/jobs/:id            Job detail, OTP gate, service flow, sign-off
+/login               Employee sign-in (demo accounts)
+/                    Jobs board + shift target (technician home)
+/jobs/:id            Job detail, tier window, start OTP, service flow, work-done OTP
 /estimates           Tool hub + saved estimates
 /estimates/gas       Gas suppression BOQ
 /estimates/fire-alarm Fire alarm quantity BOQ
@@ -70,19 +77,24 @@ The app opens with six demo jobs. Settings → **Reset demo data** restores them
 ## Verified behaviour
 
 - Typecheck is `npx tsc --noEmit` (the project has no composite build graph, so `tsc -b` fails).
-- 27 tests pass: the recovered engine arithmetic (gas stored weight, cylinder step-up, fill
-  ceilings, detector rollups, GST totals, AMC visit counts) plus the visit-clock helpers.
+- 33 tests pass: the recovered engine arithmetic (gas stored weight, cylinder step-up, fill
+  ceilings, detector rollups, GST totals, AMC visit counts), the visit-clock helpers, credit-tier
+  windows and the shift-target counter.
 - Gas wizard reproduces the site's numbers: a 5×4×3 m Novec Class C room with a 10 m pipe run
   gives 42.0 kg stored, one 80 L Ansul cylinder, and ₹3,02,596.84 including GST.
+- Sign-in: wrong PIN is rejected; either demo account opens the board with its own role and
+  shift target; sign-out returns to `/login`.
 - OTP: demo code issued, verified, services unlock, `otpVerifiedAt` recorded.
-- **Visit clock:** the timer does not start at OTP. It starts with the first live photo, sets
-  `workDueAt = startedAt + workLimitMinutes`, and every screen shows the remaining time.
-  Verified on `SH-1048`: after the first AC-service photo the job moved to **In progress** with
-  `1h 30m left · limit 90 min · Finish all 3 services by 08:18 pm`, and the board chip read
+- **Visit clock:** the timer starts when the start OTP is verified, using the customer's tier
+  (`workDueAt = startedAt + tierLimit`). Verified on `SH-1048` (tier 2, 90 min): after OTP the
+  job moved to **In progress** with `1h 30m left · limit 90 min` and the board chip read
   `1H 29M LEFT`.
+- **Work-done OTP:** all services must be closed before the sheet unlocks; the visit is only
+  completed after the customer's second code is verified (`workDoneOtpAt`).
 - Camera: live capture advanced the flow and stored a watermarked before/after pair.
 - Bundle contains zero `type="file"` and zero image-accept inputs.
-- Job creation from the control room assigns `SH-1047` and updates pending counts.
+- Job creation from the control room assigns the next `SH-` code, applies the chosen tier and
+  updates pending counts.
 
 ## Performance & resilience
 
@@ -104,7 +116,7 @@ The app opens with six demo jobs. Settings → **Reset demo data** restores them
   evicted; the service worker precaches 29 assets (524 kB) for full offline use.
 - **Modal a11y:** sheets trap Tab focus, focus the panel on open, close on `Escape`, lock body
   scroll, and restore focus to the trigger.
-- PWA build precaches 29 assets; `npx tsc --noEmit` and all 27 tests pass after the pass.
+- PWA build precaches 29 assets; `npx tsc --noEmit` and all 33 tests pass after the pass.
 
 ## Backend setup (when credentials are available)
 

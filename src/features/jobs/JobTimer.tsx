@@ -2,7 +2,7 @@ import { Badge, Card } from '@/components/ui/display'
 import { useNow } from '@/hooks/useNow'
 import { formatDuration } from '@/domain/shared/id'
 import {
-  DEFAULT_WORK_LIMIT_MINUTES,
+  jobLimitMinutes,
   remainingSeconds,
   servicesDone,
   workSeconds,
@@ -27,9 +27,9 @@ function shortDuration(seconds: number): string {
 }
 
 /**
- * The visit clock starts with the technician's first live photo, not with the
- * OTP. A job holds many services (AC service, solar cleaning, fire checks) and
- * all of them must close before the work limit expires.
+ * The visit clock starts when the customer's start OTP is verified. The window
+ * is set by the customer's credit tier (tier 1 = 60 min, tier 2 = 90 min) and
+ * covers every service in the visit.
  */
 export function JobTimer({ job, variant = 'card' }: { job: ServiceJob; variant?: Variant }) {
   const now = useNow(variant === 'chip' ? 15_000 : 1000)
@@ -41,7 +41,7 @@ export function JobTimer({ job, variant = 'card' }: { job: ServiceJob; variant?:
     if (variant === 'inline') {
       return (
         <p className="text-[11px] font-semibold text-ink-mute">
-          Timer starts with your first live photo.
+          Timer starts when the customer OTP is verified.
         </p>
       )
     }
@@ -49,11 +49,11 @@ export function JobTimer({ job, variant = 'card' }: { job: ServiceJob; variant?:
       <Card className="border-dashed p-3.5">
         <p className="text-xs font-bold uppercase tracking-wide text-ink-mute">Work timer</p>
         <p className="mt-1 text-sm font-semibold text-ink">
-          Starts when you take the first photo
+          Starts when the customer OTP is verified
         </p>
         <p className="mt-1 text-xs leading-5 text-ink-mute">
-          {job.workLimitMinutes ?? DEFAULT_WORK_LIMIT_MINUTES} minutes are allowed for all {total}{' '}
-          service{total === 1 ? '' : 's'} in this visit.
+          {jobLimitMinutes(job)} minutes are allowed for all {total}{' '}
+          service{total === 1 ? '' : 's'} in this visit (customer tier {job.tier ?? 2}).
         </p>
       </Card>
     )
@@ -109,7 +109,7 @@ export function JobTimer({ job, variant = 'card' }: { job: ServiceJob; variant?:
     )
   }
 
-  const limitMinutes = job.workLimitMinutes ?? DEFAULT_WORK_LIMIT_MINUTES
+  const limitMinutes = jobLimitMinutes(job)
   const limitSeconds = limitMinutes * 60
   const pct = Math.min(100, Math.round((elapsed / limitSeconds) * 100))
   const state = remaining === null ? null : urgency(remaining)

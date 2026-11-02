@@ -1,5 +1,5 @@
 import { Suspense, useEffect, useState } from 'react'
-import { NavLink, Outlet, Link } from 'react-router-dom'
+import { Navigate, NavLink, Outlet, Link } from 'react-router-dom'
 import clsx from 'clsx'
 import { Toaster } from '@/components/ui/toast'
 import { RouteFallback } from '@/components/RouteFallback'
@@ -34,9 +34,12 @@ function useOnline(): boolean {
 }
 
 export function AppShell() {
-  const { name, role } = useSession()
+  const { name, role, signedIn } = useSession()
   const online = useOnline()
   const nav = role === 'admin' ? NAV : NAV.filter((item) => item.to !== '/admin')
+
+  // Nothing in the app is reachable without an employee session.
+  if (!signedIn) return <Navigate to="/login" replace />
 
   return (
     <div className="min-h-dvh bg-surface-sunken">

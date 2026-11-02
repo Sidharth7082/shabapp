@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
+import clsx from 'clsx'
 import { db } from '@/db/db'
 
 /** Renders a stored photo blob from IndexedDB. */
@@ -30,12 +31,13 @@ export function PhotoThumb({
   if (!url) {
     return (
       <div
-        className={
-          className ??
-          'flex h-16 w-16 items-center justify-center rounded-lg border border-surface-line bg-surface-sunken text-[10px] text-ink-mute'
-        }
+        className={clsx(
+          'flex items-center justify-center bg-surface-sunken text-[9px] font-semibold uppercase tracking-wide text-ink-mute',
+          className ?? 'h-16 w-16 rounded-lg border border-surface-line'
+        )}
+        aria-label={`${alt} photo unavailable`}
       >
-        Loading
+        Photo
       </div>
     )
   }

@@ -242,7 +242,8 @@ export function ServiceFlow({
             <div>
               <h3 className="text-[13px] font-bold text-ink">Photograph the equipment before touching it</h3>
               <p className="mt-0.5 text-[11px] leading-4 text-ink-mute">
-                First photo starts the visit clock for every service in this job.
+                The visit clock is already running from the customer OTP. Capture the before proof,
+                then start the work.
               </p>
             </div>
 

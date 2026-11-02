@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import { useLiveQuery } from 'dexie-react-hooks'
 import clsx from 'clsx'
 import { db } from '@/db/db'
-import { Badge, EmptyState, SectionHeader, Stat } from '@/components/ui/display'
+import { Badge, Card, EmptyState, SectionHeader, Stat } from '@/components/ui/display'
 import {
   AlertIcon,
   ArrowRightIcon,
@@ -12,7 +12,7 @@ import {
   PinIcon
 } from '@/components/ui/icons'
 import { useSession } from '@/services/session'
-import { servicesDone, type ServiceJob } from '@/domain/jobs/types'
+import { completedServicesOn, servicesDone, type ServiceJob } from '@/domain/jobs/types'
 import { JobCard } from './JobCard'
 import { JobTimer } from './JobTimer'
 
@@ -41,6 +41,42 @@ function slotHint(slotStart: string): string {
   const hours = Math.round(minutes / 60)
   if (hours < 24) return `in ${hours}h`
   return new Date(slotStart).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })
+}
+
+function ShiftCard({ done, target }: { done: number; target: number }) {
+  const left = Math.max(0, target - done)
+  const pct = target > 0 ? Math.min(100, Math.round((done / target) * 100)) : 0
+
+  return (
+    <Card className="p-4">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="text-[10px] font-bold uppercase tracking-widest text-ink-mute">
+            Shift target
+          </p>
+          <p className="mt-1 text-[22px] font-extrabold leading-none tracking-tight text-ink">
+            <span className="tabular">{done}</span>
+            <span className="tabular text-ink-mute"> / {target}</span>
+            <span className="ml-1.5 text-[12px] font-semibold text-ink-mute">services today</span>
+          </p>
+        </div>
+        <Badge tone={left === 0 ? 'ok' : 'brand'}>
+          {left === 0 ? 'Target met' : `${left} to go`}
+        </Badge>
+      </div>
+      <div className="mt-3 h-2 overflow-hidden rounded-full bg-surface-line">
+        <div
+          className={clsx('h-full rounded-full transition-[width] duration-500', left === 0 ? 'bg-ok' : 'bg-brand-500')}
+          style={{ width: `${pct}%` }}
+        />
+      </div>
+      <p className="mt-2 text-[11px] leading-4 text-ink-mute">
+        {left === 0
+          ? 'Shift target complete. Finish any open visits cleanly before heading back.'
+          : `${left} more service${left === 1 ? '' : 's'} to hit today\u2019s target.`}
+      </p>
+    </Card>
+  )
 }
 
 function NextJobHero({ job }: { job: ServiceJob }) {
@@ -105,10 +141,12 @@ function NextJobHero({ job }: { job: ServiceJob }) {
 
 export function JobsScreen() {
   const name = useSession((state) => state.name)
+  const role = useSession((state) => state.role)
+  const dailyTarget = useSession((state) => state.dailyTarget)
   const jobs = useLiveQuery(() => db.jobs.toArray(), [])
   const [filter, setFilter] = useState<Filter>('active')
 
-  const { pendingServices, todayJobs, overdueJobs, activeJobs, nextJob, counts, visible } =
+  const { pendingServices, todayJobs, overdueJobs, activeJobs, nextJob, completedToday, counts, visible } =
     useMemo(() => {
       const all = jobs ?? []
       const active = all.filter((job) => job.status !== 'completed' && job.status !== 'cancelled')
@@ -140,6 +178,10 @@ export function JobsScreen() {
         overdueJobs: overdue.length,
         activeJobs: active.length,
         nextJob: ranked[0],
+        completedToday: completedServicesOn(
+          all.filter((job) => job.status !== 'cancelled'),
+          now
+        ),
         counts: { active: active.length, today: today.length, all: all.length },
         visible: sorted
       }
@@ -170,6 +212,12 @@ export function JobsScreen() {
             : 'Everything is clear for today.'}
         </p>
       </header>
+
+      {role === 'technician' && dailyTarget > 0 && (
+        <section className="px-4">
+          <ShiftCard done={completedToday} target={dailyTarget} />
+        </section>
+      )}
 
       {nextJob && (
         <section className="px-4">
