@@ -252,6 +252,12 @@ This file is maintained by **rules, not by memory**:
 
 ## 10. Changelog
 
+### 2026-11-02 — Release v0.2.1
+- New Profile tab and header profile button: settings and profile are always reachable.
+- Redesigned login with one-tap demo accounts, show/hide PIN and a compact phone layout.
+- Performance: 1.09 s cold start, deferred update check, low-end prefetch gating and 1280 px proof photos.
+- Fixed stale JavaScript after an APK update by removing the caching service worker from native builds.
+
 ### 2026-11-02 — About screen + in-app updates (v0.2.0)
 - Added the About screen (version, build date, What’s new, Privacy policy, Third-party
   notices, website) and a Settings link; the app is labelled proprietary, not open source.
