@@ -113,10 +113,10 @@ export function SettingsScreen() {
           {role === 'technician' && (
             <NumberInput
               label="Shift target"
-              suffix="services / day"
+              suffix="points / day"
               value={String(dailyTarget)}
               onChange={(event) => setDailyTarget(Number(event.target.value))}
-              hint="The job board counts today's closed services against this target."
+              hint="One completed house = 1 point. Inner services in a visit do not add points."
             />
           )}
           <Button

@@ -1,25 +1,16 @@
 import { describe, expect, it } from 'vitest'
 import {
   TIER_LIMITS_MINUTES,
-  completedServicesOn,
+  completedVisitsOn,
   jobLimitMinutes,
   tierLimitMinutes,
-  type ServiceItem
+  type ServiceJob
 } from '@/domain/jobs/types'
-
-const service = (overrides: Partial<ServiceItem> = {}): ServiceItem => ({
-  id: 's1',
-  name: 'AC service',
-  system: 'AC Service',
-  status: 'done',
-  checklist: [],
-  beforePhotoIds: [],
-  afterPhotoIds: [],
-  ...overrides
-})
 
 const localIso = (month: number, day: number, hour: number, minute = 0) =>
   new Date(2026, month - 1, day, hour, minute).toISOString()
+
+const visit = (status: ServiceJob['status'], completedAt?: string) => ({ status, completedAt })
 
 describe('customer credit tiers', () => {
   it('gives tier 1 a 60 minute visit and tier 2 a 90 minute visit', () => {
@@ -40,44 +31,26 @@ describe('customer credit tiers', () => {
   })
 })
 
-describe('shift target counter', () => {
+describe('shift points', () => {
   const day = new Date(2026, 10, 2, 18, 0)
 
-  it('counts only services closed on the requested day', () => {
+  it('counts one point per completed house regardless of inner services', () => {
     const jobs = [
-      {
-        services: [
-          service({ id: 'a', completedAt: localIso(11, 2, 9, 10) }),
-          service({ id: 'b', completedAt: localIso(11, 2, 11, 40) })
-        ]
-      },
-      {
-        services: [
-          service({ id: 'c', completedAt: localIso(11, 1, 11, 40) }),
-          service({ id: 'd', status: 'pending' })
-        ]
-      },
-      { services: [service({ id: 'e', completedAt: localIso(11, 3, 0, 30) })] }
+      visit('completed', localIso(11, 2, 9, 30)),
+      visit('completed', localIso(11, 2, 15, 0)),
+      visit('started'),
+      visit('cancelled', localIso(11, 2, 12, 0))
     ]
-
-    expect(completedServicesOn(jobs, day)).toBe(2)
+    expect(completedVisitsOn(jobs, day)).toBe(2)
   })
 
-  it('is zero before the first service closes', () => {
-    expect(
-      completedServicesOn([{ services: [service({ status: 'pending' })] }], day)
-    ).toBe(0)
-    expect(completedServicesOn([], day)).toBe(0)
+  it('ignores houses closed on another day', () => {
+    expect(completedVisitsOn([visit('completed', localIso(11, 1, 23, 59))], day)).toBe(0)
+    expect(completedVisitsOn([visit('completed', localIso(11, 3, 0, 1))], day)).toBe(0)
   })
 
-  it('adds up every service in multi-service visits', () => {
-    const visit = {
-      services: [
-        service({ id: 'a', completedAt: localIso(11, 2, 10, 0) }),
-        service({ id: 'b', completedAt: localIso(11, 2, 10, 30) }),
-        service({ id: 'c', completedAt: localIso(11, 2, 11, 0) })
-      ]
-    }
-    expect(completedServicesOn([visit], day)).toBe(3)
+  it('is zero when nothing has been closed or nothing exists', () => {
+    expect(completedVisitsOn([visit('assigned'), visit('started')], day)).toBe(0)
+    expect(completedVisitsOn([], day)).toBe(0)
   })
 })

@@ -2,10 +2,11 @@
 
 Field service app for Shabh Creations. One employee app with two modules:
 
-1. **Services** — an employee signs in, sees today's visits and a shift target (default 12
-   services), verifies the customer's start OTP (which starts the visit clock), captures live
-   before/after proof for every service, then takes a separate **work-done OTP** to close the
-   visit. Customers sit in credit tiers: tier 1 gets a 60-minute visit, tier 2 gets 90 minutes.
+1. **Services** — an employee signs in, sees today's visits and a shift target (12 **points**;
+   one completed house = 1 point, inner services do not add). The customer's start OTP starts
+   the visit clock, live before/after proof is required for every service, then a separate
+   **work-done OTP** closes the visit. Customers sit in exactly two credit tiers: tier 1 gets
+   a 60-minute visit, tier 2 gets 90 minutes.
 2. **Estimates** — the four BOQ calculators recovered from shabhcreations.com, with the
    real catalog, HSN codes and GST, plus an editable rate card for AMC.
 
@@ -34,15 +35,17 @@ restores the seeded board.
 | Area | State |
 | --- | --- |
 | Employee sign-in with ID + PIN | **Demo** — local directory, pinned to Supabase Auth in Phase 2 |
-| Job board, pending counts, today's visits, shift target (12/day) | Live, local-first |
+| Job board, pending counts, today's visits | Live, local-first |
 | Multi-service visits (AC, solar, CCTV, chimney, RO, geyser, meter, fire systems) | Live, 13 checklist templates |
-| Customer credit tiers: tier 1 = 60 min, tier 2 = 90 min | Live |
+| Shift points: 1 per completed house, target 12/day | Live |
+| Customer credit tiers: only tier 1 (60 min) and tier 2 (90 min) | Live, badge on every job |
 | Visit clock: starts when the start OTP is verified, hard deadline per visit | Live |
 | Work-done OTP before the visit can be closed | **Demo** — same local state machine as the start OTP |
 | Checklists, issues | Live |
 | Live camera capture + burned watermark (before + after per service) | Live |
 | BOQ engines (gas, fire alarm, quotation, AMC) | Live, unit-tested |
 | Control room (create/assign jobs, pick tier) | Live for this device |
+| Team locator: on-site status, last check-in/sign-off fix, Maps link | Live for last-known position |
 | Customer OTP | **Demo** — generated on-device and shown in a labelled banner |
 | Supabase sync, SMS/WhatsApp delivery, multi-manager analytics | **Pending** — schema and functions included |
 
@@ -77,9 +80,9 @@ restores the seeded board.
 ## Verified behaviour
 
 - Typecheck is `npx tsc --noEmit` (the project has no composite build graph, so `tsc -b` fails).
-- 33 tests pass: the recovered engine arithmetic (gas stored weight, cylinder step-up, fill
+- 37 tests pass: the recovered engine arithmetic (gas stored weight, cylinder step-up, fill
   ceilings, detector rollups, GST totals, AMC visit counts), the visit-clock helpers, credit-tier
-  windows and the shift-target counter.
+  windows, shift points per house and the employee-location helper.
 - Gas wizard reproduces the site's numbers: a 5×4×3 m Novec Class C room with a 10 m pipe run
   gives 42.0 kg stored, one 80 L Ansul cylinder, and ₹3,02,596.84 including GST.
 - Sign-in: wrong PIN is rejected; either demo account opens the board with its own role and
@@ -91,6 +94,10 @@ restores the seeded board.
   `1H 29M LEFT`.
 - **Work-done OTP:** all services must be closed before the sheet unlocks; the visit is only
   completed after the customer's second code is verified (`workDoneOtpAt`).
+- **Shift points:** one completed 5-service house shows `1 / 12 points` — inner services do not
+  add points; houses beyond the target appear as extra points toward the incentive.
+- **Team locator:** the control room lists each technician with on-site status, active visit and
+  the latest check-in/sign-off position (`28.53550, 77.39100` ±18 m) plus a Google Maps link.
 - Camera: live capture advanced the flow and stored a watermarked before/after pair.
 - Bundle contains zero `type="file"` and zero image-accept inputs.
 - Job creation from the control room assigns the next `SH-` code, applies the chosen tier and
@@ -116,7 +123,7 @@ restores the seeded board.
   evicted; the service worker precaches 29 assets (524 kB) for full offline use.
 - **Modal a11y:** sheets trap Tab focus, focus the panel on open, close on `Escape`, lock body
   scroll, and restore focus to the trigger.
-- PWA build precaches 29 assets; `npx tsc --noEmit` and all 33 tests pass after the pass.
+- PWA build precaches 29 assets; `npx tsc --noEmit` and all 37 tests pass after the pass.
 
 ## Backend setup (when credentials are available)
 

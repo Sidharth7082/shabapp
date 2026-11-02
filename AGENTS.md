@@ -69,7 +69,7 @@ npm install
 npm run setup:hooks   # installs the PLAN.md pre-commit guard (run once per clone)
 npm run dev            # http://127.0.0.1:5173
 npx tsc --noEmit       # typecheck (tsc -b fails: no composite project)
-npm test               # 33 engine/helper tests
+npm test               # 37 engine/helper tests
 npm run build          # tsc --noEmit && vite build (PWA precache)
 node scripts/make-icons.mjs   # regenerate placeholder icons
 ```

@@ -17,13 +17,14 @@ One app for a Shabh Creations field employee, combining two jobs that today live
 places:
 
 1. **Service operations (Blinkit-style)** — the employee signs in with an employee ID and PIN,
-   sees today's visits and a shift target (default 12 services), opens a visit and checks what
-   is already done. The customer's **start OTP** must be verified before any work; verifying it
-   starts the visit clock. Customers sit in **credit tiers**: tier 1 gets a 60-minute visit,
-   tier 2 gets 90 minutes. After the OTP the technician captures **live** before/after photos
-   for every service (gallery uploads are impossible by design). A second **work-done OTP**
-   from the customer is required before the visit can be closed. A house visit can contain many
-   services (AC service, solar-panel cleaning, CCTV, chimney, RO, geyser, meter, fire systems).
+   sees today's visits and a shift target (12 **points**; one completed house = 1 point, the
+   inner services in a visit do not add points), opens a visit and checks what is already done.
+   Customers sit in exactly **two credit tiers**: tier 1 gets a 60-minute visit, tier 2 gets 90
+   minutes. The customer's **start OTP** must be verified before any work; verifying it starts
+   the visit clock. After the OTP the technician captures **live** before/after photos for every
+   service (gallery uploads are impossible by design). A second **work-done OTP** from the
+   customer is required before the visit can be closed. A house visit can contain many services
+   (AC service, solar-panel cleaning, CCTV, chimney, RO, geyser, meter, fire systems).
 2. **Estimates** — the four BOQ calculators recovered from `shabhcreations.com` (gas
    suppression, fire alarm, quotation builder, AMC) running offline with the real catalog,
    HSN codes and 18% GST.
@@ -40,12 +41,13 @@ offline-first on IndexedDB and installs as a PWA; an Android wrapper via Capacit
 | --- | --- | --- |
 | Job board, pending-service counts, today's visits, SLA chips | **Live** | Seeded + created jobs, role-aware nav |
 | Employee sign-in with employee ID + PIN | **Demo** | Verified: wrong PIN rejected, technician and manager open different roles, sign-out returns to `/login` |
-| Shift target (default 12 services/day) with progress card | **Live** | Verified: 5 closed services showed `5 / 12` and `5 to go` |
-| Customer credit tiers: tier 1 = 60 min, tier 2 = 90 min | **Live** | Verified: SH-1051 tier 1 created with a 60-minute window; control room offers both tiers |
+| Shift points: 1 per completed house, target 12/day | **Live** | Verified: one 5-service house showed `1 / 12 points`; extra houses are shown as extra points |
+| Customer credit tiers: only tier 1 (60 min) and tier 2 (90 min) | **Live** | Tier badge on job cards, job sheet and control-room rows; verified SH-1051 as tier 1 |
 | Multi-service visit (AC, solar, CCTV, chimney, RO, geyser, meter, fire systems) | **Live** | 13 checklist templates; SH-1051 holds CCTV, chimney, RO, geyser and meter |
 | Start OTP gate before work | **Demo** | Verified: code issued, services locked until verify, `otpVerifiedAt` recorded |
 | Visit clock: starts when the start OTP is verified, per-visit deadline, late flag | **Live** | Verified on SH-1051: `startedAt`/`workDueAt` exactly 60 min apart, timer `59m 59s`, deadline `10:04 pm` |
 | Work-done OTP required to close the visit | **Demo** | Verified: footer blocked until the second code; verify set `workDoneOtpAt`; visit closed with sign-off and `completedLate` flagged |
+| Team locator (last known position) | **Live (last fix only)** | Control room shows on-site status, active visit, latest check-in/sign-off fix and a Maps link; live tracking needs Phase 2 |
 | Live camera capture + burned watermark (before + after per service) | **Live** | Zero file inputs in the bundle (CI-checked) |
 | Checklists with Pass / Fail / N/A, issue capture | **Live** | Re-opening a service restores 9/9 states |
 | Completion sign-off + rating | **Live** | Blocked until every service is done |
@@ -93,7 +95,8 @@ offline-first on IndexedDB and installs as a PWA; an Android wrapper via Capacit
 - [x] Vite + React + TS + Tailwind design system (brand green, ink/surface, 48 px taps)
 - [x] Dexie data model for jobs, services, photos, estimates, settings
 - [x] Employee sign-in (demo directory) with route guard and sign-out
-- [x] Job board with today's visits, shift target and progress card
+- [x] Job board with today's visits, shift points (1 per completed house) and progress card
+- [x] Team locator in the control room (last check-in/sign-off fix + Maps link)
 - [x] Job detail, timeline, call/navigate actions
 - [x] Credit tiers (60/90 min) that set the visit window
 - [x] Start OTP gate that starts the visit clock, and live-camera proof
@@ -134,6 +137,7 @@ offline-first on IndexedDB and installs as a PWA; an Android wrapper via Capacit
 - [ ] Reassignment + route planning (map of today's visits)
 - [ ] PDF share for quotation / BOQ (letterhead, signature block)
 - [ ] Customer sign-off signature and NPS after close
+- [ ] Live employee tracking on a map (realtime positions, geofence alerts)
 - [ ] Push notifications for new assignments (FCM)
 
 ### Phase 5 — Polish / reach
@@ -159,19 +163,20 @@ offline-first on IndexedDB and installs as a PWA; an Android wrapper via Capacit
 | 11 | Manager analytics v2, reassignment | P2 | #5 | 3 days |
 | 12 | Customer e-signature + NPS | P3 | — | 1 day |
 | 13 | Hindi strings, dark mode | P3 | — | 2 days |
+| 14 | Incentive rate card (₹ per point above target) | P2 | **User to supply incentive policy** | 0.5 day |
+| 15 | Live employee tracking (realtime map) | P2 | Sync (#5) + GPS reliability | 2 days |
 
 ## 6. Open questions for the user
 
-1. **Credit tiers** — are tier 1 = 60 min and tier 2 = 90 min final, or does a tier 3 exist?
-2. **Shift target** — is 12 the number of **services** or of **visits** per shift? The board
-   currently counts services (a 5-service visit adds 5).
-3. **AMC rates** — the site publishes none. Need a rate card (per visit / per device / per
+1. **Incentive policy** — how much is paid per point above the target, and is there a cap? The
+   app shows points today; money needs a rate from you.
+2. **AMC rates** — the site publishes none. Need a rate card (per visit / per device / per
    system) or we keep it manual.
-4. **OTP channel** — SMS via MSG91, WhatsApp Cloud API, or both? India requires a DLT-approved
+3. **OTP channel** — SMS via MSG91, WhatsApp Cloud API, or both? India requires a DLT-approved
    template for transactional SMS.
-5. **Company details for PDFs** — GSTIN, address, logo file, authorised-signatory block.
-6. **Android** — Play Store release or direct APK distribution? Minimum Android version?
-7. **Photo retention** — how long should before/after photos be kept on device / in cloud?
+4. **Company details for PDFs** — GSTIN, address, logo file, authorised-signatory block.
+5. **Android** — Play Store release or direct APK distribution? Minimum Android version?
+6. **Photo retention** — how long should before/after photos be kept on device / in cloud?
 
 ## 7. Known limitations / risks
 
@@ -183,14 +188,14 @@ offline-first on IndexedDB and installs as a PWA; an Android wrapper via Capacit
 - Photos are large: a 100-visit month can approach typical browser quotas. Watch this when
   adding uploads.
 - Geolocation needs HTTPS in production; localhost is exempt.
-- Gas pricing exists only for Ansul and Cryptzo in the source tool; other brands need rates.
+- **Employee location is last-known only.** A fix is stored at check-in (start OTP) and sign-off,\n  and only when the device grants GPS. If the manager's device has not synced, it shows the\n  last position stored locally. Live tracking is backlog item #15.\n- Gas pricing exists only for Ansul and Cryptzo in the source tool; other brands need rates.
 - The app is single-device until sync lands; the control room shows only local jobs.
 
 ## 8. How we verify (definition of "working")
 
 ```bash
 npx tsc --noEmit      # must be clean (tsc -b does not work here)
-npm test              # 33 tests, engine golden values + tier/shift helpers
+npm test              # 37 tests, engine golden values + tier/shift/team helpers
 npm run build         # production build + PWA precache
 grep -o 'type:"file"' dist/assets/*.js | wc -l   # must print 0
 ```
@@ -223,6 +228,17 @@ This file is maintained by **rules, not by memory**:
 7. Never delete old changelog entries; append.
 
 ## 10. Changelog
+
+### 2026-11-02 — Shift points + team locator
+- Shift target now counts **completed houses**: 1 house = 1 point, inner services do not add.
+  Extra houses beyond the target are shown as extra points toward the incentive.
+- Confirmed only tier 1 (60 min) and tier 2 (90 min) exist; the tier badge now appears on job
+  cards and control-room rows as well as the job sheet.
+- Control room gained a **Team** card: on-site status, active visit link, last check-in/sign-off
+  position, accuracy and a Google Maps “Locate” link (last fix from this device only).
+- Tests 33 → 37 (shift points per house, latest employee ping).
+- Verified: `1 / 12 points` after one 5-service house, tier badges on cards, technician still
+  blocked from `/admin`, team card resolves the last stored fix and maps link.
 
 ### 2026-11-02 — Field operations model v2
 - Added employee sign-in (demo directory, route guard, sign-out) and a shift target card

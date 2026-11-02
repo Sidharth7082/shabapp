@@ -12,7 +12,7 @@ import {
   PinIcon
 } from '@/components/ui/icons'
 import { useSession } from '@/services/session'
-import { completedServicesOn, servicesDone, type ServiceJob } from '@/domain/jobs/types'
+import { completedVisitsOn, servicesDone, type ServiceJob } from '@/domain/jobs/types'
 import { JobCard } from './JobCard'
 import { JobTimer } from './JobTimer'
 
@@ -45,6 +45,7 @@ function slotHint(slotStart: string): string {
 
 function ShiftCard({ done, target }: { done: number; target: number }) {
   const left = Math.max(0, target - done)
+  const extra = Math.max(0, done - target)
   const pct = target > 0 ? Math.min(100, Math.round((done / target) * 100)) : 0
 
   return (
@@ -57,7 +58,7 @@ function ShiftCard({ done, target }: { done: number; target: number }) {
           <p className="mt-1 text-[22px] font-extrabold leading-none tracking-tight text-ink">
             <span className="tabular">{done}</span>
             <span className="tabular text-ink-mute"> / {target}</span>
-            <span className="ml-1.5 text-[12px] font-semibold text-ink-mute">services today</span>
+            <span className="ml-1.5 text-[12px] font-semibold text-ink-mute">points today</span>
           </p>
         </div>
         <Badge tone={left === 0 ? 'ok' : 'brand'}>
@@ -71,9 +72,12 @@ function ShiftCard({ done, target }: { done: number; target: number }) {
         />
       </div>
       <p className="mt-2 text-[11px] leading-4 text-ink-mute">
-        {left === 0
-          ? 'Shift target complete. Finish any open visits cleanly before heading back.'
-          : `${left} more service${left === 1 ? '' : 's'} to hit today\u2019s target.`}
+        {extra > 0
+          ? `Target met with ${extra} extra point${extra === 1 ? '' : 's'} today — extra houses build your incentive.`
+          : `${left} more completed house${left === 1 ? '' : 's'} to hit today\u2019s target.`}
+      </p>
+      <p className="mt-1 text-[10px] leading-4 text-ink-mute/80">
+        1 point per completed house. Inner services in a visit do not add points.
       </p>
     </Card>
   )
@@ -178,10 +182,7 @@ export function JobsScreen() {
         overdueJobs: overdue.length,
         activeJobs: active.length,
         nextJob: ranked[0],
-        completedToday: completedServicesOn(
-          all.filter((job) => job.status !== 'cancelled'),
-          now
-        ),
+        completedToday: completedVisitsOn(all, now),
         counts: { active: active.length, today: today.length, all: all.length },
         visible: sorted
       }

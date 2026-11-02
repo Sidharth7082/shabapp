@@ -5,6 +5,7 @@ import { ChevronRightIcon, ClockIcon, PinIcon, StarIcon } from '@/components/ui/
 import {
   JOB_KIND_LABEL,
   JOB_STATUS_LABEL,
+  jobLimitMinutes,
   servicesDone,
   type ServiceJob
 } from '@/domain/jobs/types'
@@ -52,6 +53,9 @@ export function JobCard({ job }: { job: ServiceJob }) {
 
         <div className="mt-3 flex flex-wrap items-center gap-1.5">
           <Badge tone="brand">{JOB_KIND_LABEL[job.kind]}</Badge>
+          <Badge tone="info">
+            Tier {job.tier ?? 2} · {jobLimitMinutes(job)}m
+          </Badge>
           <Badge tone={complete ? 'ok' : running ? 'warn' : 'neutral'}>
             {complete ? 'Completed' : JOB_STATUS_LABEL[job.status]}
           </Badge>

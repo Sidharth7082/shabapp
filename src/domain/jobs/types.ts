@@ -137,23 +137,23 @@ export function jobLimitMinutes(
   return job.workLimitMinutes ?? tierLimitMinutes(job.tier)
 }
 
-/** Services the technician closed on a given day (the shift-target counter). */
-export function completedServicesOn(
-  jobs: Array<Pick<ServiceJob, 'services'>>,
+/**
+ * Houses the technician closed on a given day. One finished visit = one shift
+ * point, no matter how many inner services it contained.
+ */
+export function completedVisitsOn(
+  jobs: Array<Pick<ServiceJob, 'status' | 'completedAt'>>,
   day = new Date()
 ): number {
-  return jobs.reduce((total, job) => {
-    const done = job.services.filter((service) => {
-      if (!service.completedAt) return false
-      const closed = new Date(service.completedAt)
-      return (
-        closed.getFullYear() === day.getFullYear() &&
-        closed.getMonth() === day.getMonth() &&
-        closed.getDate() === day.getDate()
-      )
-    }).length
-    return total + done
-  }, 0)
+  return jobs.filter((job) => {
+    if (job.status !== 'completed' || !job.completedAt) return false
+    const closed = new Date(job.completedAt)
+    return (
+      closed.getFullYear() === day.getFullYear() &&
+      closed.getMonth() === day.getMonth() &&
+      closed.getDate() === day.getDate()
+    )
+  }).length
 }
 
 export function workSeconds(job: Pick<ServiceJob, 'startedAt' | 'completedAt'>, now = Date.now()): number {

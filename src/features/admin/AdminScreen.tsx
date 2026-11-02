@@ -10,6 +10,7 @@ import {
   Card,
   EmptyState,
   ProgressRing,
+  SectionHeader,
   Stat
 } from '@/components/ui/display'
 import {
@@ -18,16 +19,20 @@ import {
   CheckIcon,
   ClockIcon,
   LayersIcon,
+  NavigationIcon,
   PinIcon,
   PlusIcon,
   SearchIcon,
+  UserIcon,
   WrenchIcon
 } from '@/components/ui/icons'
 import { NumberInput, Select, TextInput } from '@/components/ui/fields'
 import { toast } from '@/components/ui/toast'
 import { CHECKLIST_TEMPLATES } from '@/data/checklistTemplates'
+import { DEMO_EMPLOYEES } from '@/data/employees'
 import { JOB_KIND_LABEL, JOB_STATUS_LABEL, servicesDone } from '@/domain/jobs/types'
-import type { CreditTier, JobKind } from '@/domain/jobs/types'
+import { employeeOnSite, latestEmployeePing } from '@/domain/jobs/team'
+import type { CreditTier, JobKind, ServiceJob } from '@/domain/jobs/types'
 import { createJob, deleteJob } from '@/services/jobs'
 import { useSession } from '@/services/session'
 
@@ -61,6 +66,98 @@ function localInputValue(offsetMinutes = 60): string {
   const date = new Date(Date.now() + offsetMinutes * 60_000)
   const pad = (value: number) => String(value).padStart(2, '0')
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`
+}
+
+function timeAgo(iso: string): string {
+  const minutes = Math.max(0, Math.round((Date.now() - new Date(iso).getTime()) / 60_000))
+  if (minutes < 1) return 'just now'
+  if (minutes < 60) return `${minutes} min ago`
+  const hours = Math.round(minutes / 60)
+  if (hours < 24) return `${hours} h ago`
+  return new Date(iso).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })
+}
+
+function TeamCard({ jobs }: { jobs: ServiceJob[] }) {
+  const employees = DEMO_EMPLOYEES.filter((employee) => employee.role === 'technician')
+
+  return (
+    <Card className="p-4">
+      <SectionHeader title="Team" subtitle="Last known location on this device" />
+      <div className="divide-y divide-surface-line">
+        {employees.map((employee) => {
+          const ping = latestEmployeePing(jobs, employee.name)
+          const onSite = employeeOnSite(jobs, employee.name)
+          const activeJob = jobs.find(
+            (job) => job.assignedTo === employee.name && job.status === 'started'
+          )
+          const initials = employee.name
+            .split(' ')
+            .filter(Boolean)
+            .slice(0, 2)
+            .map((part) => part[0]?.toUpperCase())
+            .join('')
+
+          return (
+            <div key={employee.id} className="flex items-start gap-3 py-3">
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-brand-50 text-[12px] font-black text-brand-700">
+                {initials}
+              </span>
+              <div className="min-w-0 flex-1">
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <p className="truncate text-[13px] font-bold text-ink">{employee.name}</p>
+                  <Badge tone={onSite ? 'warn' : 'neutral'}>{onSite ? 'On site' : 'Available'}</Badge>
+                </div>
+                <p className="mt-0.5 text-[11px] text-ink-mute">
+                  {employee.id} · target {employee.dailyTarget} points
+                </p>
+                {activeJob && (
+                  <Link
+                    to={`/jobs/${activeJob.id}`}
+                    className="mt-1 block truncate text-[11px] font-bold text-brand-700"
+                  >
+                    On site at {activeJob.customerName} · {activeJob.code}
+                  </Link>
+                )}
+                {ping ? (
+                  <>
+                    <p className="mt-1 truncate text-[11px] font-semibold text-ink-soft">
+                      {ping.customerName} · {ping.jobCode} ·{' '}
+                      {ping.kind === 'check-in' ? 'start OTP' : 'sign-off'}
+                    </p>
+                    <p className="text-[10px] text-ink-mute">
+                      {timeAgo(ping.at)} · ±{Math.round(ping.accuracy)} m ·{' '}
+                      {ping.lat.toFixed(5)}, {ping.lng.toFixed(5)}
+                    </p>
+                  </>
+                ) : (
+                  <p className="mt-1 text-[11px] text-ink-mute">
+                    {activeJob
+                      ? 'Waiting for a GPS fix — position is captured at OTP and sign-off.'
+                      : 'No location captured yet — position is recorded at OTP and sign-off.'}
+                  </p>
+                )}
+              </div>
+              {ping && (
+                <a
+                  href={`https://www.google.com/maps?q=${ping.lat},${ping.lng}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="flex shrink-0 items-center gap-1 rounded-lg bg-brand-600 px-2.5 py-1.5 text-[10px] font-bold text-white transition active:scale-95"
+                >
+                  <NavigationIcon size={12} /> Locate
+                </a>
+              )}
+            </div>
+          )
+        })}
+      </div>
+      <p className="mt-2 flex items-start gap-1 text-[10px] leading-4 text-ink-mute">
+        <UserIcon size={11} className="mt-0.5 shrink-0" />
+        Position comes from the technician’s device at check-in and sign-off. Live tracking needs the
+        Phase 2 backend.
+      </p>
+    </Card>
+  )
 }
 
 function NewJobSheet({ onClose }: { onClose: () => void }) {
@@ -345,6 +442,10 @@ export function AdminScreen() {
         />
       </section>
 
+      <section className="px-4">
+        <TeamCard jobs={jobs ?? []} />
+      </section>
+
       <section className="space-y-3 px-4">
         <div className="flex items-center gap-2 rounded-xl border border-surface-line bg-white px-3 shadow-card">
           <SearchIcon size={16} className="text-ink-mute" />
@@ -414,6 +515,7 @@ export function AdminScreen() {
                           >
                             {JOB_STATUS_LABEL[job.status]}
                           </Badge>
+                          <Badge tone="info">Tier {job.tier ?? 2}</Badge>
                         </div>
                         <p className="mt-1.5 truncate text-[14px] font-bold tracking-tight text-ink">
                           {job.customerName}
