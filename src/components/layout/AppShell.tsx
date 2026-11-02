@@ -10,6 +10,7 @@ import {
   ShieldIcon,
   UserIcon
 } from '@/components/ui/icons'
+import { LogoMark } from '@/components/ui/LogoMark'
 import { useSession } from '@/services/session'
 
 const NAV = [
@@ -51,8 +52,8 @@ export function AppShell() {
             aria-label="Open profile and settings"
             className="flex min-w-0 items-center gap-2.5 rounded-xl pr-1 transition active:opacity-70"
           >
-            <span className="relative flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-br from-brand-500 to-brand-700 text-[15px] font-black text-white shadow-card">
-              S
+            <span className="relative flex h-10 w-10 items-center justify-center">
+              <LogoMark size={40} tone="brand" className="shadow-card" />
               <span className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-white bg-ok" />
             </span>
             <span className="min-w-0">

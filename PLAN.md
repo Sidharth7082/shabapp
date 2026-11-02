@@ -39,8 +39,8 @@ offline-first on IndexedDB and installs as a PWA; an Android wrapper via Capacit
 
 | Area | State | Notes / evidence |
 | --- | --- | --- |
-| Job board, pending-service counts, today's visits, SLA chips | **Live** | Seeded + created jobs, role-aware nav |
-| Employee sign-in with employee ID + PIN | **Demo** | Verified: wrong PIN rejected, technician and manager open different roles, sign-out returns to `/login` |
+| Job board and dashboard | **Live** | Board with customer, location, services, priority and status; search by customer / job ID / location / status; Active / Today / Overdue / History / All filters; “Needs attention” alerts (overdue, urgent, new assignment); today’s overview with points % and overdue job; pending-services breakdown by job; quick actions; upcoming schedule; recent history. Verified in the browser on seeded and created jobs |
+| Employee sign-in with employee ID + PIN | **Demo** | Verified: field validation (ID format, PIN length), wrong PIN shows attempts left, 5 failures lock for 30 s with a countdown, loading state, show/hide PIN, forgot-PIN help sheet, one-tap demo accounts and “keep me signed in” (localStorage vs sessionStorage). Still a demo — production is Supabase Auth |
 | Shift points: 1 per completed house, target 12/day | **Live** | Verified: one 5-service house showed `1 / 12 points`; extra houses are shown as extra points |
 | Customer credit tiers: only tier 1 (60 min) and tier 2 (90 min) | **Live** | Tier badge on job cards, job sheet and control-room rows; verified SH-1051 as tier 1 |
 | Multi-service visit (AC, solar, CCTV, chimney, RO, geyser, meter, fire systems) | **Live** | 13 checklist templates; SH-1051 holds CCTV, chimney, RO, geyser and meter |
@@ -51,8 +51,8 @@ offline-first on IndexedDB and installs as a PWA; an Android wrapper via Capacit
 | Android app (debug APK) | **Live for testing** | Capacitor 8, `com.shabh.service`; verified on Pixel 6 / API 36: sign-in, OTP clock `59m 59s`, live camera 720×1280, photo + watermark + GPS ±5 m |
 | About screen | **Live** | Verified on device: About shows `Stable v0.2.1`, What’s new, Privacy, Third-party notices, website, proprietary footer |
 | Profile & settings | **Live** | Verified on device: Profile tab in the nav, header profile button, full name + `EMP-1042 · Technician`, target badge, sign-out, About & updates, admin control room |
-| Low-end performance | **Live** | Entry JS 42.5 KB (14.2 KB gzip); cold start **1.09 s** on the Pixel 6 emulator; proof photo **720×1280 / 18.9 KB** vs old 1392×1856 / 53.4 KB; update check deferred to idle; prefetch skipped on ≤4 GB / ≤4-core / save-data devices |
-| Phone layout | **Live** | Verified on device: login (quick accounts, show/hide PIN) and settings fit without cropping; 4-tab technician nav and 5-tab manager nav (73 px each on a 390 px viewport) |
+| Low-end performance | **Live** | Entry JS 50.2 KB (17.0 KB gzip); dashboard lives in the 26.1 KB `JobsScreen` route chunk, help sheet is a 2 KB lazy chunk; cold start **1.09 s** on the Pixel 6 emulator; proof photo **720×1280 / 18.9 KB** vs old 1392×1856 / 53.4 KB; update check deferred to idle; prefetch skipped on ≤4 GB / ≤4-core / save-data devices |
+| Phone layout | **Live** | Verified on device: login (quick accounts, show/hide PIN) and settings fit without cropping; 4-tab technician nav and 5-tab manager nav (73 px each on a 390 px viewport). Dashboard, login and help sheet re-checked at a 320 px-wide viewport in the browser with no horizontal overflow |
 | In-app update check | **Live** | Verified on device: installed v0.2.0 showed the real “New version available · v0.2.1” with release notes, Download opened the APK in Chrome, Not now suppressed it on relaunch; About manual check reports the latest version |
 | Live camera capture + burned watermark (before + after per service) | **Live** | Zero file inputs in the bundle (CI-checked) |
 | Checklists with Pass / Fail / N/A, issue capture | **Live** | Re-opening a service restores 9/9 states |
@@ -107,6 +107,8 @@ offline-first on IndexedDB and installs as a PWA; an Android wrapper via Capacit
 - [x] Dexie data model for jobs, services, photos, estimates, settings
 - [x] Employee sign-in (demo directory) with route guard and sign-out
 - [x] One-tap demo sign-in, compact phone layout, show/hide PIN
+- [x] Login hardening: field validation, attempt limit + lockout countdown, loading state, forgot-PIN help sheet, session remember toggle
+- [x] Dashboard: needs-attention alerts, today’s overview with points percentage, pending breakdown by job, search + filters, quick actions, upcoming schedule, recent history
 - [x] Profile tab in the bottom nav + header profile button; profile card with employee ID and target
 - [x] Low-end pass: deferred update check, gated prefetch, 1280 px photos, unused dependencies removed
 - [x] Native builds use a self-destroying service worker so an APK update never serves stale JS
@@ -122,7 +124,7 @@ offline-first on IndexedDB and installs as a PWA; an Android wrapper via Capacit
 - [x] Control room (create/assign/delete), role gating, reset demo data
 - [x] Insights dashboard
 - [x] Four estimate tools + saved estimates
-- [x] 44 engine/helper tests, PWA build, offline precache
+- [x] 68 engine/helper tests, PWA build, offline precache
 - [x] Accessibility pass: focus-trapped sheets, labels, reduced motion, 48 px targets
 - [x] Hardening: error boundary, lazy routes, transactions, invalid-date guards
 - [x] Performance: route splitting (`react` 206 kB / `data` 101 kB vendors, entry 42.5 kB),
@@ -133,6 +135,7 @@ offline-first on IndexedDB and installs as a PWA; an Android wrapper via Capacit
 - [ ] Supabase Auth for employees; `profiles` row carries role + daily target
 - [ ] Two OTP purposes server-side (`start`, `complete`), gated by job state
 - [ ] Deploy `send-otp` / `verify-otp` edge functions
+- [ ] Server-side PIN reset and session refresh tokens (replace the demo attempt counter)
 - [ ] Configure MSG91 (or WhatsApp Cloud API) secrets + DLT template for India
 - [ ] Remove `demoCode` from the client path; server-side attempts/rate limits/expiry audit
 - [ ] Auth: technician + manager accounts, row-level security smoke test on real data
@@ -219,7 +222,7 @@ offline-first on IndexedDB and installs as a PWA; an Android wrapper via Capacit
 
 ```bash
 npx tsc --noEmit      # must be clean (tsc -b does not work here)
-npm test              # 44 tests, engine golden values + tier/shift/team/version/capture helpers
+npm test              # 68 tests, engine golden values + tier/shift/team/version/capture/dashboard/login helpers
 npm run build         # production build + PWA precache
 grep -o 'type:"file"' dist/assets/*.js | wc -l   # must print 0
 ```
@@ -252,6 +255,19 @@ This file is maintained by **rules, not by memory**:
 7. Never delete old changelog entries; append.
 
 ## 10. Changelog
+
+### 2026-11-03 — Dashboard depth + login hardening
+- Job board now carries the operational dashboard: needs-attention alerts (overdue, urgent,
+  new assignment), today’s overview (completed / remaining / points with % of target / overdue
+  job), pending services broken down per job, quick actions, points & performance with a
+  seven-day chart, upcoming schedule with ETAs and recent job history.
+- Search covers customer, job ID, location, contact, service and status (including “overdue”);
+  filters are Active / Today / Overdue / History / All. Verified in the browser: “corporate”
+  matched SH-1043, “overdue” matched SH-1042, an unknown term showed the empty state.
+- Login: field-level validation, loading state, attempt limit with a 30 s lockout and countdown,
+  forgot-PIN help sheet with administrator contact, demo vs production separation, a real brand
+  mark, and a “keep me signed in” toggle (sessionStorage when off).
+- New pure helpers `domain/jobs/dashboard.ts` and `domain/auth/login.ts` with 24 tests (68 total).
 
 ### 2026-11-02 — Release v0.2.1
 - New Profile tab and header profile button: settings and profile are always reachable.

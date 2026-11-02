@@ -1,0 +1,68 @@
+import { Button } from '@/components/ui/Button'
+import { Badge } from '@/components/ui/display'
+import { Sheet } from '@/components/ui/Sheet'
+import { PhoneIcon } from '@/components/ui/icons'
+import { LOGIN_LOCK_MS, LOGIN_MAX_ATTEMPTS } from '@/domain/auth/login'
+import { WEBSITE_URL } from '@/version'
+
+/**
+ * Loaded only when “Forgot PIN?” or the footer help link is tapped, so the
+ * bottom-sheet code stays out of the eager login bundle on low-end phones.
+ */
+export function LoginHelpSheet({
+  onClose,
+  onFillDemo
+}: {
+  onClose: () => void
+  onFillDemo: () => void
+}) {
+  return (
+    <Sheet
+      open
+      onClose={onClose}
+      title="Sign-in help"
+      subtitle="Reset, lockout and administrator contact"
+    >
+      <div className="space-y-3">
+        <div className="rounded-2xl border border-surface-line bg-white p-3.5">
+          <div className="flex items-center justify-between">
+            <p className="text-[13px] font-bold text-ink">Demo PIN</p>
+            <Badge tone="warn">Demo</Badge>
+          </div>
+          <p className="mt-1 text-[12px] leading-5 text-ink-mute">
+            The shared demo PIN is{' '}
+            <span className="rounded bg-surface-sunken px-1.5 py-0.5 font-mono text-[12px] font-bold text-ink">
+              1234
+            </span>
+            . Aarav is the technician; Priya is the manager.
+          </p>
+          <Button variant="secondary" full className="mt-3" onClick={onFillDemo}>
+            Fill demo credentials
+          </Button>
+        </div>
+
+        <div className="rounded-2xl border border-surface-line bg-white p-3.5">
+          <p className="text-[13px] font-bold text-ink">Forgot or locked out?</p>
+          <p className="mt-1 text-[12px] leading-5 text-ink-mute">
+            In production an administrator resets the PIN through Supabase Auth; nobody can
+            reveal the current PIN. {LOGIN_MAX_ATTEMPTS} wrong attempts lock this device for{' '}
+            {LOGIN_LOCK_MS / 1000} seconds.
+          </p>
+          <a
+            href={WEBSITE_URL}
+            target="_blank"
+            rel="noreferrer"
+            className="mt-3 flex items-center justify-center gap-2 rounded-xl border border-surface-line px-3 py-2.5 text-[12px] font-bold text-brand-600 transition active:scale-[0.99]"
+          >
+            <PhoneIcon size={14} /> Contact administrator
+          </a>
+        </div>
+
+        <p className="px-1 text-[10px] leading-4 text-ink-mute">
+          This build is a demo: the PIN and the session live on this device only. Read the
+          security model in the project docs before using it with real customers.
+        </p>
+      </div>
+    </Sheet>
+  )
+}

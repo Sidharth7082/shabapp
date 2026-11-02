@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import { persist } from 'zustand/middleware'
+import { createJSONStorage, persist } from 'zustand/middleware'
 
 export type Role = 'technician' | 'admin'
 
@@ -17,7 +17,9 @@ interface SessionState {
   role: Role
   /** Services expected in one shift; 0 hides the shift-target card (managers). */
   dailyTarget: number
-  signIn: (account: Account) => void
+  /** True = remember on this device (localStorage); false = this app session only. */
+  remember: boolean
+  signIn: (account: Account, remember?: boolean) => void
   signOut: () => void
   setRole: (role: Role) => void
   setName: (name: string) => void
@@ -29,20 +31,53 @@ const SIGNED_OUT = {
   employeeId: '',
   name: '',
   role: 'technician' as Role,
-  dailyTarget: 12
+  dailyTarget: 12,
+  remember: true
 }
+
+/**
+ * "Keep me signed in" decides where the session lives: localStorage survives a
+ * relaunch, sessionStorage is dropped when the app process ends. On this device
+ * the APK's WebView clears sessionStorage on cold start, so an unchecked box does
+ * what it says. Production replaces this with Supabase Auth refresh tokens.
+ */
+const tabAwareStorage = createJSONStorage(() => ({
+  getItem: (name: string) =>
+    window.sessionStorage.getItem(name) ?? window.localStorage.getItem(name),
+  setItem: (name: string, value: string) => {
+    let remember = true
+    try {
+      remember =
+        (JSON.parse(value) as { state?: { remember?: boolean } }).state?.remember !== false
+    } catch {
+      remember = true
+    }
+    if (remember) {
+      window.localStorage.setItem(name, value)
+      window.sessionStorage.removeItem(name)
+    } else {
+      window.sessionStorage.setItem(name, value)
+      window.localStorage.removeItem(name)
+    }
+  },
+  removeItem: (name: string) => {
+    window.localStorage.removeItem(name)
+    window.sessionStorage.removeItem(name)
+  }
+}))
 
 export const useSession = create<SessionState>()(
   persist(
     (set) => ({
       ...SIGNED_OUT,
-      signIn: (account) =>
+      signIn: (account, remember = true) =>
         set({
           signedIn: true,
           employeeId: account.id,
           name: account.name,
           role: account.role,
-          dailyTarget: account.dailyTarget
+          dailyTarget: account.dailyTarget,
+          remember
         }),
       signOut: () => set({ ...SIGNED_OUT }),
       setRole: (role) => set({ role }),
@@ -50,6 +85,6 @@ export const useSession = create<SessionState>()(
       setDailyTarget: (target) =>
         set({ dailyTarget: Math.max(0, Math.round(Number.isFinite(target) ? target : 0)) })
     }),
-    { name: 'shabh-session' }
+    { name: 'shabh-session', storage: tabAwareStorage! }
   )
 )

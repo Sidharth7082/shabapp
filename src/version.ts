@@ -13,13 +13,13 @@ export const WEBSITE_URL = 'https://shabhcreations.com/'
 
 /** Human-facing highlights for the installed build (About → What's new). */
 export const RELEASE_NOTES: string[] = [
-  'Employee sign-in with a daily shift target: one completed house is one point.',
-  'Customer credit tiers: tier 1 gives a 60-minute visit, tier 2 gives 90 minutes.',
-  'The customer’s start OTP starts the visit clock; a separate work-done OTP closes the visit.',
-  'Live before/after photos are required for every service — gallery uploads are blocked.',
-  'New checklists: CCTV, chimney, RO, geyser and meter, alongside AC, solar and fire systems.',
-  'Control room team locator shows the technician’s last check-in or sign-off position.',
-  'In-app update check: the app tells you when a new build is available and links to it.'
+  'New dashboard: alerts, today’s overview with points % of target, pending services by job, quick actions and a seven-day points chart.',
+  'Service board search by customer, job ID, location or status, with Active / Today / Overdue / History / All filters.',
+  'Upcoming schedule with arrival estimates and quick access to recently completed visits.',
+  'Login hardening: field validation, loading state, attempt limit with a 30-second lockout, forgot-PIN help and “keep me signed in”.',
+  'One completed house is one point; tier 1 visits run 60 minutes, tier 2 run 90.',
+  'Start and work-done OTPs, live before/after photos with a burned watermark, and offline-first storage stay unchanged.',
+  'Brand mark on the login screen, header and update sheet; the help sheet loads only when needed.'
 ]
 
 /** Third-party components. The app itself is proprietary, not open source. */

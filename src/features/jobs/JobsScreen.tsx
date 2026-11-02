@@ -3,84 +3,49 @@ import { Link } from 'react-router-dom'
 import { useLiveQuery } from 'dexie-react-hooks'
 import clsx from 'clsx'
 import { db } from '@/db/db'
-import { Badge, Card, EmptyState, SectionHeader, Stat } from '@/components/ui/display'
+import { EmptyState, SectionHeader } from '@/components/ui/display'
 import {
-  AlertIcon,
   ArrowRightIcon,
   BriefcaseIcon,
-  LayersIcon,
-  PinIcon
+  PinIcon,
+  SearchIcon,
+  UserIcon,
+  XIcon
 } from '@/components/ui/icons'
 import { useSession } from '@/services/session'
-import { completedVisitsOn, servicesDone, type ServiceJob } from '@/domain/jobs/types'
+import { servicesDone, type ServiceJob } from '@/domain/jobs/types'
+import {
+  BOARD_FILTERS,
+  BOARD_FILTER_LABEL,
+  boardCounts,
+  dashboardAlerts,
+  etaLabel,
+  filterBoardJobs,
+  isOpenJob,
+  pendingServicesByJob,
+  recentCompleted,
+  todayOverview,
+  totalPendingServices,
+  upcomingJobs,
+  weeklyPoints,
+  type BoardFilter
+} from '@/domain/jobs/dashboard'
+import {
+  AlertsPanel,
+  HistoryPanel,
+  PointsPanel,
+  QuickActionsPanel,
+  SchedulePanel,
+  TodayOverviewPanel
+} from './DashboardPanels'
 import { JobCard } from './JobCard'
 import { JobTimer } from './JobTimer'
-
-type Filter = 'active' | 'today' | 'all'
-
-function sameDay(a: Date, b: Date): boolean {
-  return (
-    a.getFullYear() === b.getFullYear() &&
-    a.getMonth() === b.getMonth() &&
-    a.getDate() === b.getDate()
-  )
-}
 
 function greeting(): string {
   const hour = new Date().getHours()
   if (hour < 12) return 'Good morning'
   if (hour < 17) return 'Good afternoon'
   return 'Good evening'
-}
-
-function slotHint(slotStart: string): string {
-  const diff = new Date(slotStart).getTime() - Date.now()
-  if (diff <= 0) return 'Due now'
-  const minutes = Math.round(diff / 60000)
-  if (minutes < 60) return `in ${minutes}m`
-  const hours = Math.round(minutes / 60)
-  if (hours < 24) return `in ${hours}h`
-  return new Date(slotStart).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })
-}
-
-function ShiftCard({ done, target }: { done: number; target: number }) {
-  const left = Math.max(0, target - done)
-  const extra = Math.max(0, done - target)
-  const pct = target > 0 ? Math.min(100, Math.round((done / target) * 100)) : 0
-
-  return (
-    <Card className="p-4">
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <p className="text-[10px] font-bold uppercase tracking-widest text-ink-mute">
-            Shift target
-          </p>
-          <p className="mt-1 text-[22px] font-extrabold leading-none tracking-tight text-ink">
-            <span className="tabular">{done}</span>
-            <span className="tabular text-ink-mute"> / {target}</span>
-            <span className="ml-1.5 text-[12px] font-semibold text-ink-mute">points today</span>
-          </p>
-        </div>
-        <Badge tone={left === 0 ? 'ok' : 'brand'}>
-          {left === 0 ? 'Target met' : `${left} to go`}
-        </Badge>
-      </div>
-      <div className="mt-3 h-2 overflow-hidden rounded-full bg-surface-line">
-        <div
-          className={clsx('h-full rounded-full transition-[width] duration-500', left === 0 ? 'bg-ok' : 'bg-brand-500')}
-          style={{ width: `${pct}%` }}
-        />
-      </div>
-      <p className="mt-2 text-[11px] leading-4 text-ink-mute">
-        {extra > 0
-          ? `Target met with ${extra} extra point${extra === 1 ? '' : 's'} today — extra houses build your incentive.`
-          : `${left} more completed house${left === 1 ? '' : 's'} to hit today\u2019s target.`}
-      </p>
-      <p className="mt-1 text-[10px] leading-4 text-ink-mute/80">
-        1 point per completed house. Inner services in a visit do not add points.
-      </p>
-    </Card>
-  )
 }
 
 function NextJobHero({ job }: { job: ServiceJob }) {
@@ -112,6 +77,12 @@ function NextJobHero({ job }: { job: ServiceJob }) {
           <PinIcon size={13} />
           <span className="truncate">{job.address}</span>
         </p>
+        <p className="mt-0.5 flex items-center gap-1 text-[11px] text-white/70">
+          <UserIcon size={12} />
+          <span className="truncate">
+            {job.contactName} · {job.phone}
+          </span>
+        </p>
 
         <div className="mt-3.5 flex flex-wrap items-center gap-1.5">
           <span className="rounded-full bg-white/15 px-2.5 py-1 text-[11px] font-semibold">
@@ -121,7 +92,7 @@ function NextJobHero({ job }: { job: ServiceJob }) {
             <JobTimer job={job} variant="chip" />
           ) : (
             <span className="rounded-full bg-white/15 px-2.5 py-1 text-[11px] font-semibold">
-              {slotHint(job.slotStart)}
+              {etaLabel(job.slotStart)}
             </span>
           )}
           {job.priority === 'urgent' && (
@@ -148,51 +119,57 @@ export function JobsScreen() {
   const role = useSession((state) => state.role)
   const dailyTarget = useSession((state) => state.dailyTarget)
   const jobs = useLiveQuery(() => db.jobs.toArray(), [])
-  const [filter, setFilter] = useState<Filter>('active')
+  const [filter, setFilter] = useState<BoardFilter>('active')
+  const [query, setQuery] = useState('')
 
-  const { pendingServices, todayJobs, overdueJobs, activeJobs, nextJob, completedToday, counts, visible } =
-    useMemo(() => {
-      const all = jobs ?? []
-      const active = all.filter((job) => job.status !== 'completed' && job.status !== 'cancelled')
-      const now = new Date()
+  const {
+    pendingRows,
+    pendingServices,
+    openJobs,
+    overview,
+    alerts,
+    week,
+    upcoming,
+    history,
+    counts,
+    visible,
+    nextJob
+  } = useMemo(() => {
+    const all = jobs ?? []
+    const now = new Date()
+    const active = all.filter(isOpenJob)
+    const ranked = [...active].sort((a, b) => {
+      if (a.status === 'started' && b.status !== 'started') return -1
+      if (b.status === 'started' && a.status !== 'started') return 1
+      if (a.priority === 'urgent' && b.priority !== 'urgent') return -1
+      if (b.priority === 'urgent' && a.priority !== 'urgent') return 1
+      return new Date(a.slaDue).getTime() - new Date(b.slaDue).getTime()
+    })
 
-      const pending = active.reduce(
-        (count, job) => count + job.services.filter((service) => service.status !== 'done').length,
-        0
-      )
-      const today = all.filter((job) => sameDay(new Date(job.slotStart), now))
-      const overdue = active.filter((job) => new Date(job.slaDue).getTime() < Date.now())
+    return {
+      pendingRows: pendingServicesByJob(all),
+      pendingServices: totalPendingServices(all),
+      openJobs: active.length,
+      overview: todayOverview(all, dailyTarget, now),
+      alerts: dashboardAlerts(all, now),
+      week: weeklyPoints(all, now),
+      upcoming: upcomingJobs(all, now),
+      history: recentCompleted(all),
+      counts: boardCounts(all, now),
+      visible: filterBoardJobs(all, filter, query, now),
+      nextJob: ranked[0]
+    }
+  }, [jobs, dailyTarget, filter, query])
 
-      const ranked = [...active].sort((a, b) => {
-        if (a.status === 'started' && b.status !== 'started') return -1
-        if (b.status === 'started' && a.status !== 'started') return 1
-        return new Date(a.slaDue).getTime() - new Date(b.slaDue).getTime()
-      })
-
-      const list = filter === 'active' ? active : filter === 'today' ? today : all
-      const sorted = [...list].sort((a, b) => {
-        if (a.status === 'completed' && b.status !== 'completed') return 1
-        if (b.status === 'completed' && a.status !== 'completed') return -1
-        return new Date(a.slaDue).getTime() - new Date(b.slaDue).getTime()
-      })
-
-      return {
-        pendingServices: pending,
-        todayJobs: today.length,
-        overdueJobs: overdue.length,
-        activeJobs: active.length,
-        nextJob: ranked[0],
-        completedToday: completedVisitsOn(all, now),
-        counts: { active: active.length, today: today.length, all: all.length },
-        visible: sorted
-      }
-    }, [jobs, filter])
-
-  const filters: Array<{ value: Filter; label: string; count: number }> = [
-    { value: 'active', label: 'Active', count: counts.active },
-    { value: 'today', label: 'Today', count: counts.today },
-    { value: 'all', label: 'All', count: counts.all }
-  ]
+  const showHistory = () => {
+    setFilter('completed')
+    setQuery('')
+    requestAnimationFrame(() => {
+      document
+        .getElementById('service-board')
+        ?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    })
+  }
 
   return (
     <div className="space-y-5 pb-6">
@@ -209,16 +186,14 @@ export function JobsScreen() {
         </h1>
         <p className="mt-1 text-[13px] text-ink-mute">
           {pendingServices > 0
-            ? `${pendingServices} service${pendingServices === 1 ? '' : 's'} pending across ${activeJobs} job${activeJobs === 1 ? '' : 's'}.`
+            ? `${pendingServices} service${pendingServices === 1 ? '' : 's'} pending across ${openJobs} open job${openJobs === 1 ? '' : 's'}.`
             : 'Everything is clear for today.'}
         </p>
       </header>
 
-      {role === 'technician' && dailyTarget > 0 && (
-        <section className="px-4">
-          <ShiftCard done={completedToday} target={dailyTarget} />
-        </section>
-      )}
+      <AlertsPanel alerts={alerts} />
+
+      <TodayOverviewPanel overview={overview} pending={pendingRows} />
 
       {nextJob && (
         <section className="px-4">
@@ -226,27 +201,12 @@ export function JobsScreen() {
         </section>
       )}
 
-      <section className="grid grid-cols-3 gap-2.5 px-4">
-        <Stat
-          icon={<LayersIcon size={16} />}
-          label="Pending"
-          value={pendingServices}
-          tone="brand"
-        />
-        <Stat icon={<BriefcaseIcon size={16} />} label="Jobs today" value={todayJobs} />
-        <Stat
-          icon={<AlertIcon size={16} />}
-          label="Overdue"
-          value={overdueJobs}
-          tone={overdueJobs > 0 ? 'danger' : 'ok'}
-          hint={overdueJobs > 0 ? 'SLA breached' : 'On track'}
-        />
-      </section>
+      <QuickActionsPanel role={role} nextJob={nextJob} />
 
-      <section className="px-4">
+      <section id="service-board" className="scroll-mt-20 px-4">
         <SectionHeader
           title="Service board"
-          subtitle="Pending work first, then slot order"
+          subtitle={query ? `Search results for “${query}”` : 'Pending work first, then slot order'}
           action={
             <span className="text-[11px] font-semibold text-ink-mute">
               {visible.length} job{visible.length === 1 ? '' : 's'}
@@ -254,30 +214,56 @@ export function JobsScreen() {
           }
         />
 
-        <div className="mb-3 flex gap-1.5">
-          {filters.map((item) => (
+        <div className="relative mb-2">
+          <SearchIcon
+            size={15}
+            className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-ink-mute"
+          />
+          <input
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            type="search"
+            enterKeyHint="search"
+            placeholder="Search customer, job ID, location or status"
+            aria-label="Search jobs"
+            className="h-11 w-full rounded-xl border border-surface-line bg-white pl-9 pr-9 text-[13px] font-semibold text-ink outline-none placeholder:font-normal placeholder:text-ink-mute focus:border-brand-400"
+          />
+          {query && (
             <button
-              key={item.value}
               type="button"
-              onClick={() => setFilter(item.value)}
-              aria-pressed={filter === item.value}
+              onClick={() => setQuery('')}
+              aria-label="Clear search"
+              className="absolute right-1.5 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-lg text-ink-mute transition active:bg-surface-sunken"
+            >
+              <XIcon size={15} />
+            </button>
+          )}
+        </div>
+
+        <div className="mb-3 flex flex-wrap gap-1.5">
+          {BOARD_FILTERS.map((value) => (
+            <button
+              key={value}
+              type="button"
+              onClick={() => setFilter(value)}
+              aria-pressed={filter === value}
               className={clsx(
-                'flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-[12px] font-bold transition active:scale-95',
-                filter === item.value
+                'flex items-center gap-1.5 rounded-full px-2.5 py-1.5 text-[11.5px] font-bold transition active:scale-95',
+                filter === value
                   ? 'bg-brand-600 text-white shadow-card'
                   : 'border border-surface-line bg-white text-ink-soft'
               )}
             >
-              {item.label}
+              {BOARD_FILTER_LABEL[value]}
               <span
                 className={clsx(
-                  'rounded-full px-1.5 py-0.5 text-[10px] tabular',
-                  filter === item.value
+                  'tabular rounded-full px-1.5 py-0.5 text-[10px]',
+                  filter === value
                     ? 'bg-white/20 text-white'
                     : 'bg-surface-sunken text-ink-mute'
                 )}
               >
-                {item.count}
+                {counts[value]}
               </span>
             </button>
           ))}
@@ -303,11 +289,26 @@ export function JobsScreen() {
         ) : visible.length === 0 ? (
           <EmptyState
             icon={<BriefcaseIcon size={20} />}
-            title="Nothing pending here"
+            title={query ? 'No matching jobs' : filter === 'completed' ? 'No closed visits yet' : 'Nothing pending here'}
             body={
-              filter === 'active'
-                ? 'All assigned jobs are closed. Switch to All to review completed work.'
-                : 'No jobs match this filter.'
+              query
+                ? 'Try a customer name, job ID, area, service or status such as “overdue”.'
+                : filter === 'completed'
+                  ? 'Visits you close on this device are kept here with their photos and rating.'
+                  : filter === 'active'
+                    ? 'All assigned jobs are closed. Switch to All to review completed work.'
+                    : 'No jobs match this filter.'
+            }
+            action={
+              query ? (
+                <button
+                  type="button"
+                  onClick={() => setQuery('')}
+                  className="rounded-xl border border-surface-line bg-white px-4 py-2 text-[12px] font-bold text-brand-600"
+                >
+                  Clear search
+                </button>
+              ) : undefined
             }
           />
         ) : (
@@ -318,6 +319,12 @@ export function JobsScreen() {
           </div>
         )}
       </section>
+
+      <PointsPanel week={week} points={overview.points} target={dailyTarget} />
+
+      <SchedulePanel jobs={upcoming} />
+
+      <HistoryPanel jobs={history} onViewAll={showHistory} />
 
       <div className="px-4">
         <Link
@@ -330,7 +337,9 @@ export function JobsScreen() {
               Gas, fire alarm, quotation and AMC tools
             </span>
           </span>
-          <Badge tone="brand">Open</Badge>
+          <span className="rounded-full border border-brand-100 bg-brand-50 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide text-brand-700">
+            Open
+          </span>
         </Link>
       </div>
     </div>

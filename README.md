@@ -82,10 +82,11 @@ restores the seeded board.
 ## Verified behaviour
 
 - Typecheck is `npx tsc --noEmit` (the project has no composite build graph, so `tsc -b` fails).
-- 44 tests pass: the recovered engine arithmetic (gas stored weight, cylinder step-up, fill
+- 68 tests pass: the recovered engine arithmetic (gas stored weight, cylinder step-up, fill
   ceilings, detector rollups, GST totals, AMC visit counts), the visit-clock helpers, credit-tier
-  windows, shift points per house, the employee-location helper, version comparison and the
-  proof-photo size cap.
+  windows, shift points per house, the employee-location helper, version comparison, the
+  proof-photo size cap, dashboard search/filters/alerts/points helpers and login validation +
+  attempt limiting.
 - Gas wizard reproduces the site's numbers: a 5×4×3 m Novec Class C room with a 10 m pipe run
   gives 42.0 kg stored, one 80 L Ansul cylinder, and ₹3,02,596.84 including GST.
 - Sign-in: wrong PIN is rejected; either demo account opens the board with its own role and
@@ -107,12 +108,24 @@ restores the seeded board.
   launch.
 - **Profile & login:** the bottom nav has a Profile tab for both roles and the header avatar opens
   it; the profile card shows the full name, `EMP-1042 · Technician`, the shift-target badge and
-  sign-out. The redesigned login offers one-tap demo accounts, show/hide PIN, and fits a 390×844
-  screen without cropping.
-- **Low-end pass:** entry JS dropped to 42.5 KB (14.2 KB gzip) by deferring the update prompt;
-  cold start on the Pixel 6 emulator measured **1.09 s**; a captured proof photo is now
-  **720×1280 / 18.9 KB** (was 1392×1856 / 53.4 KB). Idle prefetch is skipped on devices with
-  ≤4 GB RAM, ≤4 cores or save-data.
+  sign-out. The redesigned login offers one-tap demo accounts, show/hide PIN, field validation,
+  a loading state, a 5-attempt / 30-second lockout with countdown, a forgot-PIN help sheet with
+  administrator contact, and a “keep me signed in” toggle that stores the session in
+  sessionStorage when unchecked. Verified in the browser: errors render under each field, a wrong
+  PIN reported 4 attempts left, 5 failures locked the form with a live countdown, and manual and
+  one-tap sign-in both opened the correct role.
+- **Operations dashboard:** the jobs screen shows derived alerts (overdue, urgent, new
+  assignment), today’s overview (completed / remaining / points with % of target / overdue job),
+  a per-job pending-services breakdown, quick actions, a seven-day points chart, the upcoming
+  schedule with ETAs and recent job history. The board has search (customer, job ID, location,
+  contact, service, status including “overdue”) and Active / Today / Overdue / History / All
+  filters. Verified in the browser: “corporate” matched SH-1043, “overdue” matched SH-1042, and
+  an unknown term showed the empty state.
+- **Low-end pass:** entry JS is 50.2 KB (17.0 KB gzip) including the login screen; the
+  dashboard lives in the `JobsScreen` route chunk (26.1 KB / 7.1 KB gzip) and the help sheet is a
+  2 KB lazily loaded chunk. Cold start on the Pixel 6 emulator measured **1.09 s**; a captured
+  proof photo is now **720×1280 / 18.9 KB** (was 1392×1856 / 53.4 KB). Idle prefetch is skipped
+  on devices with ≤4 GB RAM, ≤4 cores or save-data.
 - Camera: live capture advanced the flow and stored a watermarked before/after pair.
 - Bundle contains zero `type="file"` and zero image-accept inputs.
 - Job creation from the control room assigns the next `SH-` code, applies the chosen tier and
@@ -121,9 +134,9 @@ restores the seeded board.
 ## Performance & resilience
 
 - **Route-level code splitting:** every screen is `lazy()` behind a `Suspense` skeleton.
-  Measured build: entry `index` 42.5 kB (14.2 kB gzip), vendors split into `react` 206 kB
-  (67.3 kB gzip) and `data`/Dexie 100.8 kB (33 kB gzip); the update prompt is its own lazy chunk
-  and the estimate tools, control room, settings, About and insights arrive as 3–38 kB chunks.
+  Measured build: entry `index` 50.2 kB (17.0 kB gzip), vendors split into `react` 206 kB
+  (67.3 kB gzip) and `data`/Dexie 100.8 kB (33 kB gzip); jobs/dashboard 26.1 kB, job detail
+  38.2 kB, estimate tools 10–28 kB, and the login help sheet is a 2 kB lazy chunk.
 - **Idle prefetch:** after first paint the secondary chunks (estimate hub, insights, control
   room, settings, About) are warmed with `requestIdleCallback` on capable devices, so the first
   tap shows the screen rather than a skeleton (measured 53 ms in dev). Skipped on `saveData`,
@@ -136,11 +149,11 @@ restores the seeded board.
   photo blob falls back to a placeholder, and the whole tree sits inside an `ErrorBoundary`
   with Reload / Try again / Settings actions.
 - **PWA:** `navigator.storage.persist()` is requested so IndexedDB job and photo data is not
-  evicted; the service worker precaches 35 assets (568 kB) for full offline use (the APK ships a
+  evicted; the service worker precaches 35 assets (594 kB) for full offline use (the APK ships a
   self-destroying service worker instead, so app updates never serve stale JS).
 - **Modal a11y:** sheets trap Tab focus, focus the panel on open, close on `Escape`, lock body
   scroll, and restore focus to the trigger.
-- PWA build precaches 35 assets; `npx tsc --noEmit` and all 44 tests pass after the pass.
+- PWA build precaches 35 assets; `npx tsc --noEmit` and all 68 tests pass after the pass.
 
 ## Android app (test build)
 

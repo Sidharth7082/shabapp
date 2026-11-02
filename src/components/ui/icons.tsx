@@ -208,3 +208,25 @@ export const WrenchIcon = (p: IconProps) => (
     <path d="M14.5 5.5a4.5 4.5 0 0 0 5.7 5.7l-9 9a2.8 2.8 0 0 1-4-4l9-9a4.5 4.5 0 0 0-1.7-1.7z" />
   </Svg>
 )
+
+export const BellIcon = (p: IconProps) => (
+  <Svg {...p}>
+    <path d="M18 9a6 6 0 1 0-12 0c0 5-2 6-2 6h16s-2-1-2-6z" />
+    <path d="M10.3 20a2 2 0 0 0 3.4 0" />
+  </Svg>
+)
+
+export const CalendarIcon = (p: IconProps) => (
+  <Svg {...p}>
+    <rect x="3.5" y="5" width="17" height="15.5" rx="2.5" />
+    <path d="M3.5 9.5h17M8 3v4M16 3v4" />
+  </Svg>
+)
+
+export const HistoryIcon = (p: IconProps) => (
+  <Svg {...p}>
+    <path d="M3.5 12a8.5 8.5 0 1 0 2.6-6.1" />
+    <path d="M3 4.5v4h4" />
+    <path d="M12 8v4.5l3 1.8" />
+  </Svg>
+)

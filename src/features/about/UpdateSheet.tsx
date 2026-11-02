@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Button } from '@/components/ui/Button'
 import { Sheet } from '@/components/ui/Sheet'
 import { Badge, Card } from '@/components/ui/display'
+import { LogoMark } from '@/components/ui/LogoMark'
 import { CheckIcon, SparkIcon } from '@/components/ui/icons'
 import { APP_NAME } from '@/version'
 import { openUpdateDownload, type UpdateManifest } from '@/services/updates'
@@ -60,9 +61,7 @@ export function UpdateSheet({
         <Card className="relative overflow-hidden border-0 bg-gradient-to-br from-brand-700 via-brand-600 to-brand-500 p-4 text-white">
           <span className="pointer-events-none absolute -right-10 -top-12 h-32 w-32 rounded-full bg-white/10" />
           <div className="relative flex items-center gap-3">
-            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white/15 text-[16px] font-black">
-              S
-            </span>
+            <LogoMark size={44} />
             <div className="min-w-0">
               <p className="text-[10px] font-bold uppercase tracking-widest text-white/70">
                 Update ready
