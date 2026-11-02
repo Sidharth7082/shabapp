@@ -8,6 +8,6 @@
     "Performance: 1.09 s cold start, deferred update check, low-end prefetch gating and 1280 px proof photos.",
     "Fixed stale JavaScript after an APK update by removing the caching service worker from native builds."
   ],
-  "apkUrl": "https://github.com/Sidharth7082/shabapp-releases/releases/download/v0.2.1/shabh-service-debug.apk",
+  "apkUrl": "https://github.com/Sidharth7082/shabapp-releases/releases/download/v0.2.1/shabh-service-debug.apk?v=0.2.1",
   "webUrl": "https://github.com/Sidharth7082/shabapp-releases/releases/tag/v0.2.1"
 }

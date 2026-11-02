@@ -105,7 +105,7 @@ const manifest = {
   channel: 'stable',
   releasedAt: new Date().toISOString(),
   notes,
-  apkUrl: `https://github.com/${RELEASE_REPO}/releases/download/v${version}/shabh-service-debug.apk`,
+  apkUrl: `https://github.com/${RELEASE_REPO}/releases/download/v${version}/shabh-service-debug.apk?v=${version}`,
   webUrl: `https://github.com/${RELEASE_REPO}/releases/tag/v${version}`
 }
 writeFileSync('public/update.json', `${JSON.stringify(manifest, null, 2)}\n`)
@@ -115,7 +115,7 @@ run('npm', ['run', 'android:apk'])
 if (!existsSync(APK)) fail('The APK was not produced. Is the Android SDK configured?')
 
 mkdirSync('release', { recursive: true })
-const apkCopy = `release/shabh-service-${version}.apk`
+const apkCopy = 'release/shabh-service-debug.apk'
 copyFileSync(APK, apkCopy)
 
 // 2. Public release in the binary-only repo
@@ -144,7 +144,13 @@ if (releaseExists) {
   ])
 }
 
-// 3. Update the public manifest the app checks on launch
+// 3. The manifest must point at a file that actually downloads.
+const probe = await fetch(manifest.apkUrl, { method: 'HEAD', redirect: 'follow' })
+if (!probe.ok) {
+  fail(`The APK URL is not reachable (${probe.status}): ${manifest.apkUrl}`)
+}
+
+// 4. Update the public manifest the app checks on launch
 const content = Buffer.from(readFileSync('public/update.json')).toString('base64')
 let sha = null
 try {
@@ -168,7 +174,7 @@ const apiArgs = [
 if (sha) apiArgs.push('-f', `sha=${sha}`)
 run('gh', apiArgs)
 
-// 4. PLAN.md changelog (the living plan must match reality)
+// 5. PLAN.md changelog (the living plan must match reality)
 const date = new Date().toISOString().slice(0, 10)
 const entry = `### ${date} — Release v${version}\n${notes.map((note) => `- ${note}`).join('\n')}\n\n`
 const plan = readFileSync('PLAN.md', 'utf8')
@@ -177,7 +183,7 @@ const updatedPlan = plan
   .replace('## 10. Changelog\n\n', `## 10. Changelog\n\n${entry}`)
 writeFileSync('PLAN.md', updatedPlan)
 
-// 5. Commit and push the source repo
+// 6. Commit and push the source repo
 run('git', ['add', 'package.json', 'package-lock.json', 'public/update.json', 'PLAN.md'])
 run('git', ['commit', '-m', `chore(release): v${version}`])
 run('git', ['push'])

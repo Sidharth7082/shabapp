@@ -101,10 +101,10 @@ restores the seeded board.
   add points; houses beyond the target appear as extra points toward the incentive.
 - **Team locator:** the control room lists each technician with on-site status, active visit and
   the latest check-in/sign-off position (`28.53550, 77.39100` ±18 m) plus a Google Maps link.
-- **About & updates:** About shows `Stable v0.2.0`, release notes, privacy, notices and a manual
-  update check. On a Pixel 6 the installed v0.2.0 build showed “New version available · v0.2.2”
-  on launch (QA manifest), Download opened the APK in Chrome, and Not now suppressed it on the
-  next launch.
+- **About & updates:** About shows `Stable v0.2.1`, release notes, privacy, notices and a manual
+  update check. On a Pixel 6 the installed v0.2.0 build showed the real “New version available ·
+  v0.2.1” on launch, Download opened the APK in Chrome, and Not now suppressed it on the next
+  launch.
 - **Profile & login:** the bottom nav has a Profile tab for both roles and the header avatar opens
   it; the profile card shows the full name, `EMP-1042 · Technician`, the shift-target badge and
   sign-out. The redesigned login offers one-tap demo accounts, show/hide PIN, and fits a 390×844
@@ -121,12 +121,13 @@ restores the seeded board.
 ## Performance & resilience
 
 - **Route-level code splitting:** every screen is `lazy()` behind a `Suspense` skeleton.
-  Measured build: entry `index` 29.7 kB (10.7 kB gzip), vendors split into `react` 206 kB
-  (67.2 kB gzip) and `data`/Dexie 100.8 kB (33 kB gzip); `JobsScreen` loads at 9.9 kB and the
-  estimate tools, control room and insights arrive as separate 6–35 kB chunks.
+  Measured build: entry `index` 42.5 kB (14.2 kB gzip), vendors split into `react` 206 kB
+  (67.3 kB gzip) and `data`/Dexie 100.8 kB (33 kB gzip); the update prompt is its own lazy chunk
+  and the estimate tools, control room, settings, About and insights arrive as 3–38 kB chunks.
 - **Idle prefetch:** after first paint the secondary chunks (estimate hub, insights, control
-  room, settings) are warmed with `requestIdleCallback`, so the first tap shows the screen
-  rather than a skeleton (measured 53 ms in dev). Skipped on `saveData` connections.
+  room, settings, About) are warmed with `requestIdleCallback` on capable devices, so the first
+  tap shows the screen rather than a skeleton (measured 53 ms in dev). Skipped on `saveData`,
+  ≤4 GB memory or ≤4-core devices.
 - **Typing stays responsive:** catalog search runs against a `useDeferredValue` term, and all
   engine results (gas, fire alarm, quotation, AMC, insights) are `useMemo`-derived.
 - **Writes are atomic:** taking a photo and finishing a service run inside Dexie read-write
@@ -135,10 +136,11 @@ restores the seeded board.
   photo blob falls back to a placeholder, and the whole tree sits inside an `ErrorBoundary`
   with Reload / Try again / Settings actions.
 - **PWA:** `navigator.storage.persist()` is requested so IndexedDB job and photo data is not
-  evicted; the service worker precaches 29 assets (524 kB) for full offline use.
+  evicted; the service worker precaches 35 assets (568 kB) for full offline use (the APK ships a
+  self-destroying service worker instead, so app updates never serve stale JS).
 - **Modal a11y:** sheets trap Tab focus, focus the panel on open, close on `Escape`, lock body
   scroll, and restore focus to the trigger.
-- PWA build precaches 29 assets; `npx tsc --noEmit` and all 44 tests pass after the pass.
+- PWA build precaches 35 assets; `npx tsc --noEmit` and all 44 tests pass after the pass.
 
 ## Android app (test build)
 
@@ -153,13 +155,14 @@ $ANDROID_HOME/platform-tools/adb install -r android/app/build/outputs/apk/debug/
   same camera-only bundle as the PWA (no file pickers).
 - **Verified on a Pixel 6 / API 36 emulator:** sign-in, board with shift points, job sheet,
   start OTP (`59m 59s` left, deadline set from tier 1), services unlocked, live camera
-  (`readyState 4`, 1392×1856), before photo captured with watermark and `GPS ±5 m`; About screen
+  (`readyState 4`, 720×1280), before photo captured with watermark and `GPS ±5 m`; About screen
   and the launch update prompt (Download / Not now) were exercised on the same device. The
   redesigned login and Profile tab, a 1.09 s cold start and a 720×1280 proof photo were verified
   on the same emulator.
 - `node scripts/device-test.mjs` replays the flow over the WebView CDP socket:
   `adb forward tcp:9222 localabstract:webview_devtools_remote_<pid>`.
-- The debug APK is attached to the GitHub release for the tag; binaries are not committed.
+- Latest APK: https://github.com/Sidharth7082/shabapp-releases/releases/latest (binaries are not
+  committed to this repository).
 
 ## Releases & updates
 
