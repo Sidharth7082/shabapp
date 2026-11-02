@@ -74,7 +74,7 @@ export function AppShell() {
         )}
       </header>
 
-      <main className="app-shell pb-24">
+      <main className="app-shell pb-28">
         <Suspense fallback={<RouteFallback />}>
           <Outlet />
         </Suspense>

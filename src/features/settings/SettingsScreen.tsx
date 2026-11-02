@@ -17,6 +17,7 @@ import { NumberInput, TextInput } from '@/components/ui/fields'
 import { toast } from '@/components/ui/toast'
 import { resetDemoData } from '@/db/seed'
 import { useSession } from '@/services/session'
+import { APP_VERSION } from '@/version'
 
 function StorageRow({ icon, label, value }: { icon: ReactNode; label: string; value: number }) {
   return (
@@ -176,9 +177,19 @@ export function SettingsScreen() {
           <span className="text-[12px] font-bold text-ink">Open control room</span>
           <ChevronRightIcon size={15} className="text-ink-mute" />
         </Link>
+        <Link
+          to="/about"
+          className="mt-2 flex items-center justify-between rounded-xl bg-surface-sunken px-3 py-2.5"
+        >
+          <span className="text-[12px] font-bold text-ink">About Shabh Service</span>
+          <span className="flex items-center gap-1 text-[11px] font-semibold text-ink-mute">
+            v{APP_VERSION}
+            <ChevronRightIcon size={15} />
+          </span>
+        </Link>
       </Card>
 
-      <p className="text-center text-[11px] text-ink-mute">Shabh Service · v0.1.0</p>
+      <p className="text-center text-[11px] text-ink-mute">Shabh Service · v{APP_VERSION}</p>
     </div>
   )
 }

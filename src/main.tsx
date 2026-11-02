@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client'
 import { RouterProvider } from 'react-router-dom'
 import { router } from './router'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
+import { UpdatePrompt } from '@/features/about/UpdatePrompt'
 import { ensureSeed } from '@/db/seed'
 import '@/styles/index.css'
 
@@ -17,6 +18,7 @@ createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <ErrorBoundary>
       <RouterProvider router={router} />
+      <UpdatePrompt />
     </ErrorBoundary>
   </StrictMode>
 )
@@ -31,6 +33,7 @@ function prefetchRouteChunks() {
   void import('@/features/insights/InsightsScreen')
   void import('@/features/admin/AdminScreen')
   void import('@/features/settings/SettingsScreen')
+  void import('@/features/about/AboutScreen')
 }
 
 if (typeof window !== 'undefined') {

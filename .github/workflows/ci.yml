@@ -40,6 +40,23 @@ jobs:
           fi
           echo "No file inputs in the bundle."
 
+      - name: Version matches the update manifest
+        run: |
+          node -e "
+            const pkg = require('./package.json');
+            const manifest = require('./public/update.json');
+            if (pkg.version !== manifest.version) {
+              console.error('package.json is v' + pkg.version + ' but public/update.json is v' + manifest.version);
+              console.error('Ship through npm run release so installed apps can see the update.');
+              process.exit(1);
+            }
+            if (!manifest.apkUrl || !manifest.webUrl) {
+              console.error('public/update.json needs apkUrl and webUrl');
+              process.exit(1);
+            }
+            console.log('Version and update manifest agree on v' + pkg.version);
+          "
+
       - name: Plan freshness reminder
         if: github.event_name == 'push' && github.event.before != '0000000000000000000000000000000000000000'
         run: |

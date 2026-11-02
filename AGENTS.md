@@ -43,6 +43,8 @@ A task is done only when all of these are true:
 - [ ] `grep -o 'type:"file"' dist/assets/*.js | wc -l` prints `0`
 - [ ] The affected screen was opened in a browser with no page errors
 - [ ] `PLAN.md` matches what you just did (status row + changelog + date)
+- [ ] If you changed the Android app, it was tested on a device/emulator and shipped through
+      `npm run release` (see §9)
 
 ## 4. Golden rules
 
@@ -69,9 +71,10 @@ npm install
 npm run setup:hooks   # installs the PLAN.md pre-commit guard (run once per clone)
 npm run dev            # http://127.0.0.1:5173
 npx tsc --noEmit       # typecheck (tsc -b fails: no composite project)
-npm test               # 37 engine/helper tests
+npm test               # 41 engine/helper tests
 npm run build          # tsc --noEmit && vite build (PWA precache)
 npm run android:apk    # build + cap sync + Android debug APK
+npm run release        # ship a build: version + APK + update manifest + changelog
 node scripts/device-test.mjs   # replay the visit flow inside the installed app (needs adb + CDP)
 node scripts/make-icons.mjs   # regenerate placeholder icons
 ```
@@ -106,3 +109,15 @@ node scripts/make-icons.mjs   # regenerate placeholder icons
 - `main` is the only branch. Commit messages: `feat:`, `fix:`, `perf:`, `docs:`, `chore:`.
 - Never commit `.env`, `node_modules`, `dist`, keys or customer data.
 - A commit that changes behaviour without updating `PLAN.md` is incomplete.
+
+## 9. Releases & updates (never skip)
+
+- Ship every build with **`npm run release -- --patch --notes "..."`** (or `--minor` /
+  `--version`). It bumps the version, builds the APK, publishes it to the public
+  `Sidharth7082/shabapp-releases` repository, updates `update.json`, appends the changelog and
+  commits/pushes. Never hand-publish an APK or hand-edit `public/update.json`.
+- The installed app checks the public manifest on **every launch** and shows **“New version
+  available”** with the release notes and **Download update / Not now**; About → Check for
+  updates rechecks on demand. This is a product requirement.
+- `package.json` and `public/update.json` must always carry the same version — CI enforces it.
+- Full protocol: `docs/RELEASE-UPDATES.md` and `PLAN.md` §11.

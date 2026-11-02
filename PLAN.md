@@ -8,7 +8,7 @@
 - **Last updated:** 2026-11-02
 - **Stage:** Phase 1 complete — production-ready offline PWA. Phase 2 (real OTP + multi-device
   sync) is next and is blocked on credentials.
-- **Health:** `npx tsc --noEmit` clean · `npm test` 33/33 pass · `npm run build` ok
+- **Health:** `npx tsc --noEmit` clean · `npm test` 41/41 pass · `npm run build` ok
 - **Repo:** private GitHub repo `shabapp` (see README for how to clone)
 
 ## 1. What we are building
@@ -49,6 +49,8 @@ offline-first on IndexedDB and installs as a PWA; an Android wrapper via Capacit
 | Work-done OTP required to close the visit | **Demo** | Verified: footer blocked until the second code; verify set `workDoneOtpAt`; visit closed with sign-off and `completedLate` flagged |
 | Team locator (last known position) | **Live (last fix only)** | Control room shows on-site status, active visit, latest check-in/sign-off fix and a Maps link; live tracking needs Phase 2 |
 | Android app (debug APK) | **Live for testing** | Capacitor 8, `com.shabh.service`; verified on Pixel 6 / API 36: sign-in, OTP clock `59m 59s`, live camera 1392×1856, photo + watermark + GPS ±5 m |
+| About screen | **Live** | Verified on device: About shows `Stable v0.2.0`, What’s new, Privacy, Third-party notices, website, proprietary footer |
+| In-app update check | **Live** | Verified on device: installed v0.2.0 showed “New version available · v0.2.2”, Download opened the APK in Chrome, Not now suppressed it on relaunch; About manual check reports “You are on the latest version” |
 | Live camera capture + burned watermark (before + after per service) | **Live** | Zero file inputs in the bundle (CI-checked) |
 | Checklists with Pass / Fail / N/A, issue capture | **Live** | Re-opening a service restores 9/9 states |
 | Completion sign-off + rating | **Live** | Blocked until every service is done |
@@ -84,6 +86,10 @@ offline-first on IndexedDB and installs as a PWA; an Android wrapper via Capacit
 7. **Geolocation / address lookups are fire-and-forget.** A denied permission must never
    block OTP verification or job completion.
 8. **All job mutations that touch services are transactional** (`db.transaction('rw', db.jobs…)`).
+9. **Every build ships through `npm run release`.** Never hand-publish an APK: the release
+   script bumps the version, builds, uploads the APK, updates the public manifest and the
+   changelog. That manifest is what makes installed apps show **“New version available”** with
+   notes and a Download button on their next launch. See §11.
 
 ## 4. Phases
 
@@ -129,6 +135,7 @@ offline-first on IndexedDB and installs as a PWA; an Android wrapper via Capacit
 ### Phase 3 — Android + field readiness
 - [x] Capacitor wrapper, app id `com.shabh.service`, camera + location permissions
 - [x] Debug APK built and exercised on a Pixel 6 / API 36 emulator (login, OTP clock, live camera, capture)
+- [x] About screen (version, release notes, privacy, third-party notices) and in-app update check
 - [ ] App icon + splash from the real brand asset
 - [ ] HTTPS production deployment for the PWA (geolocation needs a secure context)
 - [ ] Background sync + "pending uploads" indicator
@@ -168,6 +175,7 @@ offline-first on IndexedDB and installs as a PWA; an Android wrapper via Capacit
 | 13 | Hindi strings, dark mode | P3 | — | 2 days |
 | 14 | Incentive rate card (₹ per point above target) | P2 | **User to supply incentive policy** | 0.5 day |
 | 15 | Live employee tracking (realtime map) | P2 | Sync (#5) + GPS reliability | 2 days |
+| 16 | Move the update manifest/APK to company-controlled storage (Supabase or shabhcreations.com) | P2 | User to provide storage | 0.5 day |
 
 ## 6. Open questions for the user
 
@@ -180,6 +188,9 @@ offline-first on IndexedDB and installs as a PWA; an Android wrapper via Capacit
 4. **Company details for PDFs** — GSTIN, address, logo file, authorised-signatory block.
 5. **Android** — Play Store release or direct APK distribution? Minimum Android version?
 6. **Photo retention** — how long should before/after photos be kept on device / in cloud?
+7. **Update hosting** — the manifest and APK currently live in the public `shabapp-releases`
+   repository (binaries only, source stays private). Confirm this is acceptable or provide
+   company storage for Phase 3+.
 
 ## 7. Known limitations / risks
 
@@ -198,7 +209,7 @@ offline-first on IndexedDB and installs as a PWA; an Android wrapper via Capacit
 
 ```bash
 npx tsc --noEmit      # must be clean (tsc -b does not work here)
-npm test              # 37 tests, engine golden values + tier/shift/team helpers
+npm test              # 41 tests, engine golden values + tier/shift/team/version helpers
 npm run build         # production build + PWA precache
 grep -o 'type:"file"' dist/assets/*.js | wc -l   # must print 0
 ```
@@ -231,6 +242,24 @@ This file is maintained by **rules, not by memory**:
 7. Never delete old changelog entries; append.
 
 ## 10. Changelog
+
+### 2026-11-02 — About screen + in-app updates (v0.2.0)
+- Added the About screen (version, build date, What’s new, Privacy policy, Third-party
+  notices, website) and a Settings link; the app is labelled proprietary, not open source.
+- Added the launch update check: a branded “New version available” sheet with release notes and
+  Download update / Not now; Not now remembers that version; About → Check for updates rechecks
+  on demand. The manifest is read through GitHub’s uncached contents API with a raw fallback.
+- Created the public, source-free `shabapp-releases` repository for the APK and `update.json`.
+- Added `scripts/release.mjs` (`npm run release -- --patch --notes "..."`), which bumps the
+  version, builds, publishes the APK and manifest, and updates this changelog; CI now fails if
+  `package.json` and `public/update.json` disagree.
+- Phone layout fixes: OTP is the first card under the job header, the “finish more services”
+  bar only appears when the visit can be closed, the login screen is compact, and the shell has
+  extra bottom padding.
+- Tests 37 → 41 (version comparison).
+- Verified: desktop About shows v0.2.0/no prompt, manual check “latest”; Pixel 6 / API 36 showed
+  the v0.2.2 QA prompt on an installed v0.2.0 build, Download opened Chrome with the APK URL,
+  Not now suppressed the prompt after relaunch.
 
 ### 2026-11-02 — Android test build
 - Added the Capacitor 8 wrapper (`com.shabh.service`) with camera and location permissions,
@@ -291,3 +320,18 @@ This file is maintained by **rules, not by memory**:
   search, SLA/work-limit clamping.
 - Verified: gas ₹3,02,596.84; OTP → unlock → ServiceFlow; timer `1h 30m left`; 27/27 tests;
   0 file inputs in the bundle.
+
+## 11. Release & update protocol (never skip)
+
+- Ship every build with **`npm run release -- --patch --notes "..."`** (or `--minor` /
+  `--version`). It bumps the version, builds the APK, publishes it to the public
+  `Sidharth7082/shabapp-releases` repository, updates `update.json`, appends the changelog and
+  commits/pushes.
+- The installed app checks that manifest on **every launch** and shows **“New version
+  available”** with the notes and **Download update / Not now**. **About → Check for updates**
+  rechecks on demand.
+- `package.json`, `public/update.json` and the published manifest must always carry the same
+  version; CI fails otherwise.
+- Never hand-publish an APK or hand-edit `update.json`. Full details:
+  **`docs/RELEASE-UPDATES.md`**.
+

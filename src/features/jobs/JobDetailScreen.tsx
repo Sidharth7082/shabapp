@@ -304,13 +304,13 @@ export function JobDetailScreen() {
         </div>
       </Card>
 
-      <Card className="p-4">
-        <StatusTimeline job={job} />
-      </Card>
+      {!complete && <OtpGate job={job} onVerified={() => undefined} />}
 
       <JobTimer job={job} />
 
-      {!complete && <OtpGate job={job} onVerified={() => undefined} />}
+      <Card className="p-3.5">
+        <StatusTimeline job={job} />
+      </Card>
 
       <section className="space-y-2.5">
         <div className="flex items-center justify-between">
@@ -371,19 +371,16 @@ export function JobDetailScreen() {
         </Card>
       )}
 
-      {!complete && (
+      {!complete && allDone && (
         <div className="sticky bottom-24 z-10">
           <Button
             full
             size="lg"
-            variant={allDone ? 'primary' : 'secondary'}
-            disabled={!allDone}
+            variant="primary"
             onClick={() => setCompleting(true)}
             className="shadow-elevated"
           >
-            {allDone
-              ? 'Take work-done OTP & close'
-              : `Finish ${total - done} more service${total - done === 1 ? '' : 's'}`}
+            Take work-done OTP & close
           </Button>
         </div>
       )}

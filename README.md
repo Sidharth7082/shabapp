@@ -46,6 +46,7 @@ restores the seeded board.
 | BOQ engines (gas, fire alarm, quotation, AMC) | Live, unit-tested |
 | Control room (create/assign jobs, pick tier) | Live for this device |
 | Team locator: on-site status, last check-in/sign-off fix, Maps link | Live for last-known position |
+| About screen + in-app update check (release notes, privacy, notices) | Live |
 | Customer OTP | **Demo** — generated on-device and shown in a labelled banner |
 | Supabase sync, SMS/WhatsApp delivery, multi-manager analytics | **Pending** — schema and functions included |
 
@@ -63,6 +64,7 @@ restores the seeded board.
 /insights            Time on site, issues, SLA, scorecard
 /admin               Control room
 /settings            Profile, storage, build status
+/about               Version, check for updates, release notes, privacy
 ```
 
 ## Design system
@@ -80,9 +82,10 @@ restores the seeded board.
 ## Verified behaviour
 
 - Typecheck is `npx tsc --noEmit` (the project has no composite build graph, so `tsc -b` fails).
-- 37 tests pass: the recovered engine arithmetic (gas stored weight, cylinder step-up, fill
+- 41 tests pass: the recovered engine arithmetic (gas stored weight, cylinder step-up, fill
   ceilings, detector rollups, GST totals, AMC visit counts), the visit-clock helpers, credit-tier
-  windows, shift points per house and the employee-location helper.
+  windows, shift points per house, the employee-location helper and version comparison for
+  in-app updates.
 - Gas wizard reproduces the site's numbers: a 5×4×3 m Novec Class C room with a 10 m pipe run
   gives 42.0 kg stored, one 80 L Ansul cylinder, and ₹3,02,596.84 including GST.
 - Sign-in: wrong PIN is rejected; either demo account opens the board with its own role and
@@ -98,6 +101,10 @@ restores the seeded board.
   add points; houses beyond the target appear as extra points toward the incentive.
 - **Team locator:** the control room lists each technician with on-site status, active visit and
   the latest check-in/sign-off position (`28.53550, 77.39100` ±18 m) plus a Google Maps link.
+- **About & updates:** About shows `Stable v0.2.0`, release notes, privacy, notices and a manual
+  update check. On a Pixel 6 the installed v0.2.0 build showed “New version available · v0.2.2”
+  on launch (QA manifest), Download opened the APK in Chrome, and Not now suppressed it on the
+  next launch.
 - Camera: live capture advanced the flow and stored a watermarked before/after pair.
 - Bundle contains zero `type="file"` and zero image-accept inputs.
 - Job creation from the control room assigns the next `SH-` code, applies the chosen tier and
@@ -123,7 +130,7 @@ restores the seeded board.
   evicted; the service worker precaches 29 assets (524 kB) for full offline use.
 - **Modal a11y:** sheets trap Tab focus, focus the panel on open, close on `Escape`, lock body
   scroll, and restore focus to the trigger.
-- PWA build precaches 29 assets; `npx tsc --noEmit` and all 37 tests pass after the pass.
+- PWA build precaches 29 assets; `npx tsc --noEmit` and all 41 tests pass after the pass.
 
 ## Android app (test build)
 
@@ -138,10 +145,29 @@ $ANDROID_HOME/platform-tools/adb install -r android/app/build/outputs/apk/debug/
   same camera-only bundle as the PWA (no file pickers).
 - **Verified on a Pixel 6 / API 36 emulator:** sign-in, board with shift points, job sheet,
   start OTP (`59m 59s` left, deadline set from tier 1), services unlocked, live camera
-  (`readyState 4`, 1392×1856), before photo captured with watermark and `GPS ±5 m`.
+  (`readyState 4`, 1392×1856), before photo captured with watermark and `GPS ±5 m`; About screen
+  and the launch update prompt (Download / Not now) were exercised on the same device.
 - `node scripts/device-test.mjs` replays the flow over the WebView CDP socket:
   `adb forward tcp:9222 localabstract:webview_devtools_remote_<pid>`.
 - The debug APK is attached to the GitHub release for the tag; binaries are not committed.
+
+## Releases & updates
+
+- Installed apps check
+  `https://raw.githubusercontent.com/Sidharth7082/shabapp-releases/main/update.json` on every
+  launch (override with `VITE_UPDATE_URL`). A newer `version` opens **“New version available”**
+  with the release notes and **Download update / Not now**; **About → Check for updates**
+  rechecks on demand.
+- Ship a build only through the release command:
+
+  ```bash
+  npm run release -- --patch --notes "Fixed: ..." --notes "New: ..."
+  ```
+
+  It bumps `package.json`, writes `public/update.json`, builds the APK, publishes the APK and
+  manifest to the public `shabapp-releases` repository (binaries only, source stays private),
+  appends the changelog and commits/pushes. CI fails if the version and manifest disagree.
+- Full protocol: `docs/RELEASE-UPDATES.md` and `PLAN.md` §11.
 
 ## Backend setup (when credentials are available)
 

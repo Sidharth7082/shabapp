@@ -47,6 +47,9 @@ const SettingsScreen = lazy(() =>
     default: module.SettingsScreen
   }))
 )
+const AboutScreen = lazy(() =>
+  import('@/features/about/AboutScreen').then((module) => ({ default: module.AboutScreen }))
+)
 
 export const router = createBrowserRouter(
   [
@@ -64,7 +67,8 @@ export const router = createBrowserRouter(
         { path: 'estimates/amc', element: <AmcScreen /> },
         { path: 'insights', element: <InsightsScreen /> },
         { path: 'admin', element: <AdminScreen /> },
-        { path: 'settings', element: <SettingsScreen /> }
+        { path: 'settings', element: <SettingsScreen /> },
+        { path: 'about', element: <AboutScreen /> }
       ]
     }
   ],

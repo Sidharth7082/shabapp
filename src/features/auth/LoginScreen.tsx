@@ -40,14 +40,14 @@ export function LoginScreen() {
 
   return (
     <div className="min-h-dvh bg-surface-sunken">
-      <div className="relative overflow-hidden bg-gradient-to-br from-brand-700 via-brand-600 to-brand-500 px-5 pb-16 pt-12 text-white">
+      <div className="relative overflow-hidden bg-gradient-to-br from-brand-700 via-brand-600 to-brand-500 px-5 pb-12 pt-10 text-white">
         <span className="pointer-events-none absolute -right-16 -top-20 h-56 w-56 rounded-full bg-white/10" />
         <span className="pointer-events-none absolute -bottom-24 -left-16 h-52 w-52 rounded-full bg-white/5" />
         <div className="relative mx-auto max-w-md">
           <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/15 text-[20px] font-black shadow-card">
             S
           </span>
-          <h1 className="mt-4 text-[28px] font-extrabold leading-tight tracking-tight">
+          <h1 className="mt-3 text-[26px] font-extrabold leading-tight tracking-tight">
             Shabh Service
           </h1>
           <p className="mt-1 text-[13px] leading-5 text-white/80">
@@ -56,10 +56,10 @@ export function LoginScreen() {
         </div>
       </div>
 
-      <main className="mx-auto -mt-10 max-w-md px-4 pb-10">
+      <main className="mx-auto -mt-8 max-w-md px-4 pb-8">
         <form
           onSubmit={submit}
-          className="rounded-3xl border border-surface-line bg-white p-5 shadow-elevated"
+          className="rounded-3xl border border-surface-line bg-white p-4 shadow-elevated"
         >
           <div className="flex items-center justify-between">
             <h2 className="text-[16px] font-extrabold tracking-tight text-ink">Employee sign in</h2>
@@ -110,28 +110,24 @@ export function LoginScreen() {
             Sign in
           </Button>
 
-          <div className="mt-5 rounded-2xl border border-dashed border-surface-line bg-surface-sunken p-3">
+          <div className="mt-4 rounded-2xl border border-dashed border-surface-line bg-surface-sunken p-2.5">
             <p className="text-[10px] font-bold uppercase tracking-widest text-ink-mute">
               Demo accounts
             </p>
-            <div className="mt-2 space-y-2">
+            <div className="mt-2 grid grid-cols-2 gap-2">
               {DEMO_EMPLOYEES.map((employee) => (
                 <button
                   key={employee.id}
                   type="button"
                   onClick={() => fill(employee.id, employee.pin)}
-                  className="flex w-full items-center justify-between rounded-xl bg-white px-3 py-2.5 text-left shadow-card transition active:scale-[0.99]"
+                  className="rounded-xl bg-white px-2.5 py-2 text-left shadow-card transition active:scale-[0.99]"
                 >
-                  <span className="min-w-0">
-                    <span className="block truncate text-[12px] font-bold text-ink">
-                      {employee.name}
-                    </span>
-                    <span className="block text-[10px] text-ink-mute">
-                      {employee.role === 'admin' ? 'Manager' : 'Technician'} · {employee.id} · PIN{' '}
-                      {employee.pin}
-                    </span>
+                  <span className="block truncate text-[11px] font-bold text-ink">
+                    {employee.name.split(' ')[0]} · {employee.role === 'admin' ? 'Manager' : 'Tech'}
                   </span>
-                  <span className="text-[11px] font-bold text-brand-600">Use</span>
+                  <span className="block truncate text-[10px] text-ink-mute">
+                    {employee.id} · PIN {employee.pin}
+                  </span>
                 </button>
               ))}
             </div>

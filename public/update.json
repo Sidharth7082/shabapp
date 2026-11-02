@@ -1,0 +1,16 @@
+{
+  "version": "0.2.0",
+  "channel": "stable",
+  "releasedAt": "2026-11-02T00:00:00.000Z",
+  "notes": [
+    "Employee sign-in with a daily shift target: one completed house is one point.",
+    "Customer credit tiers: tier 1 gives a 60-minute visit, tier 2 gives 90 minutes.",
+    "The customer's start OTP starts the visit clock; a separate work-done OTP closes the visit.",
+    "Live before/after photos are required for every service — gallery uploads are blocked.",
+    "New checklists: CCTV, chimney, RO, geyser and meter, alongside AC, solar and fire systems.",
+    "Control room team locator shows the technician's last check-in or sign-off position.",
+    "In-app update check: the app tells you when a new build is available and links to it."
+  ],
+  "apkUrl": "https://github.com/Sidharth7082/shabapp-releases/releases/download/v0.2.0/shabh-service-debug.apk",
+  "webUrl": "https://github.com/Sidharth7082/shabapp-releases/releases/tag/v0.2.0"
+}
