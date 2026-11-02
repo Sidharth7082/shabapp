@@ -2,7 +2,7 @@ import { useState, type FormEvent } from 'react'
 import { Navigate, useNavigate } from 'react-router-dom'
 import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/display'
-import { DEMO_EMPLOYEES, authenticateEmployee } from '@/data/employees'
+import { DEMO_EMPLOYEES, authenticateEmployee, type DemoEmployee } from '@/data/employees'
 import { useSession } from '@/services/session'
 
 export function LoginScreen() {
@@ -12,17 +12,12 @@ export function LoginScreen() {
 
   const [employeeId, setEmployeeId] = useState('')
   const [pin, setPin] = useState('')
+  const [showPin, setShowPin] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   if (signedIn) return <Navigate to="/" replace />
 
-  const submit = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault()
-    const employee = authenticateEmployee(employeeId, pin)
-    if (!employee) {
-      setError('Unknown employee ID or wrong PIN. Use a demo account below.')
-      return
-    }
+  const enter = (employee: DemoEmployee) => {
     signIn({
       id: employee.id,
       name: employee.name,
@@ -32,10 +27,14 @@ export function LoginScreen() {
     navigate('/', { replace: true })
   }
 
-  const fill = (id: string, code: string) => {
-    setEmployeeId(id)
-    setPin(code)
-    setError(null)
+  const submit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    const employee = authenticateEmployee(employeeId, pin)
+    if (!employee) {
+      setError('Unknown employee ID or wrong PIN. Use a demo account above.')
+      return
+    }
+    enter(employee)
   }
 
   return (
@@ -56,20 +55,56 @@ export function LoginScreen() {
         </div>
       </div>
 
-      <main className="mx-auto -mt-8 max-w-md px-4 pb-8">
+      <main className="mx-auto -mt-6 max-w-md px-4 pb-8">
         <form
           onSubmit={submit}
           className="rounded-3xl border border-surface-line bg-white p-4 shadow-elevated"
         >
           <div className="flex items-center justify-between">
-            <h2 className="text-[16px] font-extrabold tracking-tight text-ink">Employee sign in</h2>
+            <h2 className="text-[16px] font-extrabold tracking-tight text-ink">Welcome back</h2>
             <Badge tone="warn">Demo</Badge>
           </div>
           <p className="mt-1 text-[12px] leading-5 text-ink-mute">
-            Use your employee ID and PIN. Real accounts will be created in Supabase Auth.
+            Sign in to see today’s visits. Tap a demo account to continue.
           </p>
 
-          <label className="mt-4 block">
+          <div className="mt-3 grid grid-cols-2 gap-2">
+            {DEMO_EMPLOYEES.map((employee) => (
+              <button
+                key={employee.id}
+                type="button"
+                onClick={() => enter(employee)}
+                className="flex items-center gap-2 rounded-xl border border-surface-line bg-surface-sunken px-2.5 py-2 text-left transition active:scale-[0.98]"
+              >
+                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand-600 text-[11px] font-black text-white">
+                  {employee.name
+                    .split(' ')
+                    .filter(Boolean)
+                    .slice(0, 2)
+                    .map((part) => part[0]?.toUpperCase())
+                    .join('')}
+                </span>
+                <span className="min-w-0">
+                  <span className="block truncate text-[11px] font-bold text-ink">
+                    {employee.name.split(' ')[0]}
+                  </span>
+                  <span className="block truncate text-[9px] text-ink-mute">
+                    {employee.role === 'admin' ? 'Manager' : 'Technician'}
+                  </span>
+                </span>
+              </button>
+            ))}
+          </div>
+
+          <div className="my-3 flex items-center gap-2">
+            <span className="h-px flex-1 bg-surface-line" />
+            <span className="text-[9px] font-bold uppercase tracking-widest text-ink-mute">
+              or use employee ID
+            </span>
+            <span className="h-px flex-1 bg-surface-line" />
+          </div>
+
+          <label className="block">
             <span className="text-[12px] font-bold text-ink-soft">Employee ID</span>
             <input
               value={employeeId}
@@ -84,20 +119,30 @@ export function LoginScreen() {
             />
           </label>
 
-          <label className="mt-3 block">
+          <label className="mt-2.5 block">
             <span className="text-[12px] font-bold text-ink-soft">PIN</span>
-            <input
-              value={pin}
-              onChange={(event) => {
-                setPin(event.target.value.replace(/\D/g, '').slice(0, 6))
-                setError(null)
-              }}
-              type="password"
-              inputMode="numeric"
-              autoComplete="current-password"
-              placeholder="4 to 6 digits"
-              className="mt-1.5 h-12 w-full rounded-xl border border-surface-line bg-surface-sunken px-3 text-[14px] font-semibold tracking-[0.3em] text-ink outline-none focus:border-brand-400"
-            />
+            <span className="relative mt-1.5 block">
+              <input
+                value={pin}
+                onChange={(event) => {
+                  setPin(event.target.value.replace(/\D/g, '').slice(0, 6))
+                  setError(null)
+                }}
+                type={showPin ? 'text' : 'password'}
+                inputMode="numeric"
+                autoComplete="current-password"
+                placeholder="4 to 6 digits"
+                className="h-12 w-full rounded-xl border border-surface-line bg-surface-sunken px-3 pr-16 text-[14px] font-semibold tracking-[0.3em] text-ink outline-none focus:border-brand-400"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPin((value) => !value)}
+                className="absolute inset-y-0 right-0 rounded-r-xl px-3 text-[11px] font-bold text-brand-600"
+                aria-label={showPin ? 'Hide PIN' : 'Show PIN'}
+              >
+                {showPin ? 'Hide' : 'Show'}
+              </button>
+            </span>
           </label>
 
           {error && (
@@ -106,37 +151,14 @@ export function LoginScreen() {
             </p>
           )}
 
-          <Button type="submit" full size="lg" className="mt-4">
+          <Button type="submit" full size="lg" className="mt-3">
             Sign in
           </Button>
-
-          <div className="mt-4 rounded-2xl border border-dashed border-surface-line bg-surface-sunken p-2.5">
-            <p className="text-[10px] font-bold uppercase tracking-widest text-ink-mute">
-              Demo accounts
-            </p>
-            <div className="mt-2 grid grid-cols-2 gap-2">
-              {DEMO_EMPLOYEES.map((employee) => (
-                <button
-                  key={employee.id}
-                  type="button"
-                  onClick={() => fill(employee.id, employee.pin)}
-                  className="rounded-xl bg-white px-2.5 py-2 text-left shadow-card transition active:scale-[0.99]"
-                >
-                  <span className="block truncate text-[11px] font-bold text-ink">
-                    {employee.name.split(' ')[0]} · {employee.role === 'admin' ? 'Manager' : 'Tech'}
-                  </span>
-                  <span className="block truncate text-[10px] text-ink-mute">
-                    {employee.id} · PIN {employee.pin}
-                  </span>
-                </button>
-              ))}
-            </div>
-          </div>
         </form>
 
-        <p className="mt-4 text-center text-[11px] leading-4 text-ink-mute">
-          Demo sign-in only. The PIN is stored in the bundle; production uses Supabase Auth with a
-          hashed password and a server-side profile.
+        <p className="mt-2.5 text-center text-[10px] leading-4 text-ink-mute">
+          Demo sign-in only. Tap a demo account to continue, or use EMP-1042 / 1234. Production
+          uses Supabase Auth with a server-side profile.
         </p>
       </main>
     </div>

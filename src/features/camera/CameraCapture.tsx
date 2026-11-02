@@ -50,7 +50,7 @@ export function CameraCapture({
     }
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: { ideal: 'environment' }, width: { ideal: 1920 } },
+        video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 } },
         audio: false
       })
       // The sheet may have closed while the permission prompt was open.

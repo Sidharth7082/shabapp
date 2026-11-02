@@ -63,6 +63,8 @@ A task is done only when all of these are true:
    Supabase Auth + edge functions + MSG91/WhatsApp.
 8. **Geolocation is fire-and-forget.** Never await it in a completion or OTP path.
 9. **Job/service mutations are transactional** (`db.transaction('rw', db.jobs, …)`).
+10. **Stay light for low-end phones.** No new eager dependency; keep the entry bundle within
+    budget, cap proof photos at 1280 px, and gate idle prefetch on device memory / save-data.
 
 ## 5. Commands
 
@@ -71,7 +73,7 @@ npm install
 npm run setup:hooks   # installs the PLAN.md pre-commit guard (run once per clone)
 npm run dev            # http://127.0.0.1:5173
 npx tsc --noEmit       # typecheck (tsc -b fails: no composite project)
-npm test               # 41 engine/helper tests
+npm test               # 44 engine/helper tests
 npm run build          # tsc --noEmit && vite build (PWA precache)
 npm run android:apk    # build + cap sync + Android debug APK
 npm run release        # ship a build: version + APK + update manifest + changelog

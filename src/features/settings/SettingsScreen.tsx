@@ -86,27 +86,34 @@ export function SettingsScreen() {
   return (
     <div className="space-y-4 px-4 pb-8 pt-5">
       <header>
-        <p className="text-[10px] font-bold uppercase tracking-widest text-ink-mute">Device</p>
+        <p className="text-[10px] font-bold uppercase tracking-widest text-ink-mute">Account</p>
         <h1 className="mt-1 text-[26px] font-extrabold leading-tight tracking-tight text-ink">
-          Settings
+          Profile & settings
         </h1>
-        <p className="mt-1 text-[13px] text-ink-mute">Profile, offline storage and build status.</p>
+        <p className="mt-1 text-[13px] text-ink-mute">Your account, this device and app info.</p>
       </header>
 
       <Card className="p-4">
+        <SectionHeader title="Profile" subtitle="Signed in on this device" />
         <div className="flex items-center gap-3">
-          <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-brand-500 to-brand-700 text-[16px] font-black text-white">
+          <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-brand-500 to-brand-700 text-[16px] font-black text-white">
             {initials || 'S'}
           </span>
           <div className="min-w-0 flex-1">
-            <p className="truncate text-[15px] font-bold tracking-tight text-ink">
+            <p className="text-[15px] font-bold leading-tight tracking-tight text-ink">
               {name || 'Technician'}
             </p>
-            <p className="text-[11px] text-ink-mute">
+            <p className="mt-0.5 text-[11px] leading-4 text-ink-mute">
               {employeeId || 'No account'} · {role === 'admin' ? 'Manager' : 'Technician'}
             </p>
           </div>
+        </div>
+
+        <div className="mt-2.5 flex flex-wrap gap-1.5">
           <Badge tone={role === 'admin' ? 'brand' : 'neutral'}>{role}</Badge>
+          {role === 'technician' && (
+            <Badge tone="info">Target {dailyTarget} points / day</Badge>
+          )}
         </div>
 
         <div className="mt-4 space-y-3">
@@ -131,6 +138,34 @@ export function SettingsScreen() {
             Sign out
           </Button>
         </div>
+      </Card>
+
+      <Card className="p-4">
+        <SectionHeader title="App" subtitle="Updates, control room and version" />
+        <Link
+          to="/about"
+          className="flex items-center justify-between rounded-xl bg-surface-sunken px-3 py-3"
+        >
+          <span>
+            <span className="block text-[12px] font-bold text-ink">About & updates</span>
+            <span className="block text-[10px] text-ink-mute">
+              Shabh Service v{APP_VERSION} · check for updates
+            </span>
+          </span>
+          <ChevronRightIcon size={15} className="text-ink-mute" />
+        </Link>
+        {role === 'admin' && (
+          <Link
+            to="/admin"
+            className="mt-2 flex items-center justify-between rounded-xl bg-surface-sunken px-3 py-3"
+          >
+            <span>
+              <span className="block text-[12px] font-bold text-ink">Control room</span>
+              <span className="block text-[10px] text-ink-mute">Create jobs and locate the team</span>
+            </span>
+            <ChevronRightIcon size={15} className="text-ink-mute" />
+          </Link>
+        )}
       </Card>
 
       <Card className="p-4">
@@ -170,23 +205,6 @@ export function SettingsScreen() {
           engineer. Photos are captured live, watermarked with job, time and GPS, and never selected
           from the gallery.
         </p>
-        <Link
-          to="/admin"
-          className="mt-3 flex items-center justify-between rounded-xl bg-surface-sunken px-3 py-2.5"
-        >
-          <span className="text-[12px] font-bold text-ink">Open control room</span>
-          <ChevronRightIcon size={15} className="text-ink-mute" />
-        </Link>
-        <Link
-          to="/about"
-          className="mt-2 flex items-center justify-between rounded-xl bg-surface-sunken px-3 py-2.5"
-        >
-          <span className="text-[12px] font-bold text-ink">About Shabh Service</span>
-          <span className="flex items-center gap-1 text-[11px] font-semibold text-ink-mute">
-            v{APP_VERSION}
-            <ChevronRightIcon size={15} />
-          </span>
-        </Link>
       </Card>
 
       <p className="text-center text-[11px] text-ink-mute">Shabh Service · v{APP_VERSION}</p>

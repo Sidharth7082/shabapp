@@ -42,6 +42,9 @@ version without the manifest.** CI fails if `package.json` and `public/update.js
 - Offline launches are unaffected: the check times out silently and the app keeps working.
 - Cold-start check takes a few seconds (network + WebView warm-up); the sheet appears as soon as
   the manifest resolves, which was verified on a Pixel 6 emulator.
+- **Native builds do not cache assets.** `npm run android:apk` builds with `CAPACITOR=true`, which
+  emits a self-destroying service worker and clears any old PWA cache on launch. Without this, an
+  APK update could keep serving the previous JavaScript (this happened once and was fixed).
 
 ## Public channel
 

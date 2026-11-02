@@ -27,6 +27,8 @@ verified in a browser or by a test, label it "implemented, not yet verified".
 - **Geolocation is fire-and-forget**; never await it when verifying OTP or completing a job.
 - Job/service writes go through `db.transaction('rw', db.jobs, …)`.
 - Keep the technician role out of `/admin`; keep screens lazy-loaded in `src/router.tsx`.
+- **Stay light for low-end phones:** no new eager dependency, proof photos capped at 1280 px,
+  idle prefetch gated on `deviceMemory` / `hardwareConcurrency` / save-data.
 - **Releases:** never hand-publish an APK or edit `public/update.json`. Ship with
   `npm run release -- --patch --notes "..."`; the manifest it publishes is what makes installed
   apps show “New version available” on launch. See `docs/RELEASE-UPDATES.md`.

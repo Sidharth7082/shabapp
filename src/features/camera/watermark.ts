@@ -9,13 +9,27 @@ export interface WatermarkInfo {
   accuracy?: number
 }
 
-export const MAX_CAPTURE_WIDTH = 1600
+/** Longest edge of a stored proof photo. Keeps canvas memory small on low-end phones. */
+export const MAX_CAPTURE_WIDTH = 1280
+
+/** Output size for a camera frame, never upscaling and never above the cap. */
+export function captureSize(
+  videoWidth: number,
+  videoHeight: number
+): { width: number; height: number } {
+  if (!videoWidth || !videoHeight) return { width: 0, height: 0 }
+  const scale = Math.min(1, MAX_CAPTURE_WIDTH / videoWidth)
+  return {
+    width: Math.round(videoWidth * scale),
+    height: Math.round(videoHeight * scale)
+  }
+}
 
 /** Burns job, service, employee, time and GPS into the pixels themselves. */
 export function drawWatermarkedFrame(
   video: HTMLVideoElement,
   info: WatermarkInfo,
-  quality = 0.82
+  quality = 0.72
 ): Promise<Blob> {
   const videoWidth = video.videoWidth
   const videoHeight = video.videoHeight
@@ -23,9 +37,7 @@ export function drawWatermarkedFrame(
     return Promise.reject(new Error('Camera frame is not ready'))
   }
 
-  const scale = Math.min(1, MAX_CAPTURE_WIDTH / videoWidth)
-  const width = Math.round(videoWidth * scale)
-  const height = Math.round(videoHeight * scale)
+  const { width, height } = captureSize(videoWidth, videoHeight)
 
   const canvas = document.createElement('canvas')
   canvas.width = width

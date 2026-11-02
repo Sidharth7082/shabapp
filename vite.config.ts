@@ -9,6 +9,10 @@ const pkg = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 
   version: string
 }
 
+// The APK ships its own assets. A service worker there only serves stale JS
+// after an app update, so it is disabled for Capacitor builds.
+const isCapacitorBuild = process.env.CAPACITOR === 'true'
+
 export default defineConfig({
   define: {
     __APP_VERSION__: JSON.stringify(pkg.version),
@@ -16,7 +20,10 @@ export default defineConfig({
   },
   plugins: [
     react(),
-    VitePWA({
+    ...(isCapacitorBuild
+      ? [VitePWA({ selfDestroying: true })]
+      : [
+          VitePWA({
       registerType: 'autoUpdate',
       includeAssets: ['icons/icon-192.png', 'icons/icon-512.png'],
       manifest: {
@@ -38,6 +45,8 @@ export default defineConfig({
         globPatterns: ['**/*.{js,css,html,svg,png,woff2}']
       }
     })
+        ]
+      )
   ],
   resolve: {
     alias: {

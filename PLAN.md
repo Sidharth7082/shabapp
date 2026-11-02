@@ -8,7 +8,7 @@
 - **Last updated:** 2026-11-02
 - **Stage:** Phase 1 complete — production-ready offline PWA. Phase 2 (real OTP + multi-device
   sync) is next and is blocked on credentials.
-- **Health:** `npx tsc --noEmit` clean · `npm test` 41/41 pass · `npm run build` ok
+- **Health:** `npx tsc --noEmit` clean · `npm test` 44/44 pass · `npm run build` ok
 - **Repo:** private GitHub repo `shabapp` (see README for how to clone)
 
 ## 1. What we are building
@@ -50,6 +50,9 @@ offline-first on IndexedDB and installs as a PWA; an Android wrapper via Capacit
 | Team locator (last known position) | **Live (last fix only)** | Control room shows on-site status, active visit, latest check-in/sign-off fix and a Maps link; live tracking needs Phase 2 |
 | Android app (debug APK) | **Live for testing** | Capacitor 8, `com.shabh.service`; verified on Pixel 6 / API 36: sign-in, OTP clock `59m 59s`, live camera 1392×1856, photo + watermark + GPS ±5 m |
 | About screen | **Live** | Verified on device: About shows `Stable v0.2.0`, What’s new, Privacy, Third-party notices, website, proprietary footer |
+| Profile & settings | **Live** | Verified on device: Profile tab in the nav, header profile button, full name + `EMP-1042 · Technician`, target badge, sign-out, About & updates, admin control room |
+| Low-end performance | **Live** | Entry JS 42.5 KB (14.2 KB gzip); cold start **1.09 s** on the Pixel 6 emulator; proof photo **720×1280 / 18.9 KB** vs old 1392×1856 / 53.4 KB; update check deferred to idle; prefetch skipped on ≤4 GB / ≤4-core / save-data devices |
+| Phone layout | **Live** | Verified on device: login (quick accounts, show/hide PIN) and settings fit without cropping; 4-tab technician nav and 5-tab manager nav (73 px each on a 390 px viewport) |
 | In-app update check | **Live** | Verified on device: installed v0.2.0 showed “New version available · v0.2.2”, Download opened the APK in Chrome, Not now suppressed it on relaunch; About manual check reports “You are on the latest version” |
 | Live camera capture + burned watermark (before + after per service) | **Live** | Zero file inputs in the bundle (CI-checked) |
 | Checklists with Pass / Fail / N/A, issue capture | **Live** | Re-opening a service restores 9/9 states |
@@ -90,6 +93,8 @@ offline-first on IndexedDB and installs as a PWA; an Android wrapper via Capacit
    script bumps the version, builds, uploads the APK, updates the public manifest and the
    changelog. That manifest is what makes installed apps show **“New version available”** with
    notes and a Download button on their next launch. See §11.
+10. **Stay light for low-end phones.** No new eager dependency; keep the entry bundle within
+    budget, cap proof photos at 1280 px, and gate idle prefetch on device memory / save-data.
 
 ## 4. Phases
 
@@ -102,6 +107,10 @@ offline-first on IndexedDB and installs as a PWA; an Android wrapper via Capacit
 - [x] Vite + React + TS + Tailwind design system (brand green, ink/surface, 48 px taps)
 - [x] Dexie data model for jobs, services, photos, estimates, settings
 - [x] Employee sign-in (demo directory) with route guard and sign-out
+- [x] One-tap demo sign-in, compact phone layout, show/hide PIN
+- [x] Profile tab in the bottom nav + header profile button; profile card with employee ID and target
+- [x] Low-end pass: deferred update check, gated prefetch, 1280 px photos, unused dependencies removed
+- [x] Native builds use a self-destroying service worker so an APK update never serves stale JS
 - [x] Job board with today's visits, shift points (1 per completed house) and progress card
 - [x] Team locator in the control room (last check-in/sign-off fix + Maps link)
 - [x] Job detail, timeline, call/navigate actions
@@ -209,7 +218,7 @@ offline-first on IndexedDB and installs as a PWA; an Android wrapper via Capacit
 
 ```bash
 npx tsc --noEmit      # must be clean (tsc -b does not work here)
-npm test              # 41 tests, engine golden values + tier/shift/team/version helpers
+npm test              # 44 tests, engine golden values + tier/shift/team/version/capture helpers
 npm run build         # production build + PWA precache
 grep -o 'type:"file"' dist/assets/*.js | wc -l   # must print 0
 ```

@@ -82,10 +82,10 @@ restores the seeded board.
 ## Verified behaviour
 
 - Typecheck is `npx tsc --noEmit` (the project has no composite build graph, so `tsc -b` fails).
-- 41 tests pass: the recovered engine arithmetic (gas stored weight, cylinder step-up, fill
+- 44 tests pass: the recovered engine arithmetic (gas stored weight, cylinder step-up, fill
   ceilings, detector rollups, GST totals, AMC visit counts), the visit-clock helpers, credit-tier
-  windows, shift points per house, the employee-location helper and version comparison for
-  in-app updates.
+  windows, shift points per house, the employee-location helper, version comparison and the
+  proof-photo size cap.
 - Gas wizard reproduces the site's numbers: a 5×4×3 m Novec Class C room with a 10 m pipe run
   gives 42.0 kg stored, one 80 L Ansul cylinder, and ₹3,02,596.84 including GST.
 - Sign-in: wrong PIN is rejected; either demo account opens the board with its own role and
@@ -105,6 +105,14 @@ restores the seeded board.
   update check. On a Pixel 6 the installed v0.2.0 build showed “New version available · v0.2.2”
   on launch (QA manifest), Download opened the APK in Chrome, and Not now suppressed it on the
   next launch.
+- **Profile & login:** the bottom nav has a Profile tab for both roles and the header avatar opens
+  it; the profile card shows the full name, `EMP-1042 · Technician`, the shift-target badge and
+  sign-out. The redesigned login offers one-tap demo accounts, show/hide PIN, and fits a 390×844
+  screen without cropping.
+- **Low-end pass:** entry JS dropped to 42.5 KB (14.2 KB gzip) by deferring the update prompt;
+  cold start on the Pixel 6 emulator measured **1.09 s**; a captured proof photo is now
+  **720×1280 / 18.9 KB** (was 1392×1856 / 53.4 KB). Idle prefetch is skipped on devices with
+  ≤4 GB RAM, ≤4 cores or save-data.
 - Camera: live capture advanced the flow and stored a watermarked before/after pair.
 - Bundle contains zero `type="file"` and zero image-accept inputs.
 - Job creation from the control room assigns the next `SH-` code, applies the chosen tier and
@@ -130,7 +138,7 @@ restores the seeded board.
   evicted; the service worker precaches 29 assets (524 kB) for full offline use.
 - **Modal a11y:** sheets trap Tab focus, focus the panel on open, close on `Escape`, lock body
   scroll, and restore focus to the trigger.
-- PWA build precaches 29 assets; `npx tsc --noEmit` and all 41 tests pass after the pass.
+- PWA build precaches 29 assets; `npx tsc --noEmit` and all 44 tests pass after the pass.
 
 ## Android app (test build)
 
@@ -146,7 +154,9 @@ $ANDROID_HOME/platform-tools/adb install -r android/app/build/outputs/apk/debug/
 - **Verified on a Pixel 6 / API 36 emulator:** sign-in, board with shift points, job sheet,
   start OTP (`59m 59s` left, deadline set from tier 1), services unlocked, live camera
   (`readyState 4`, 1392×1856), before photo captured with watermark and `GPS ±5 m`; About screen
-  and the launch update prompt (Download / Not now) were exercised on the same device.
+  and the launch update prompt (Download / Not now) were exercised on the same device. The
+  redesigned login and Profile tab, a 1.09 s cold start and a 720×1280 proof photo were verified
+  on the same emulator.
 - `node scripts/device-test.mjs` replays the flow over the WebView CDP socket:
   `adb forward tcp:9222 localabstract:webview_devtools_remote_<pid>`.
 - The debug APK is attached to the GitHub release for the tag; binaries are not committed.

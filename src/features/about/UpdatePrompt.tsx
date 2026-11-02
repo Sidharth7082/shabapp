@@ -27,7 +27,8 @@ export function UpdatePrompt() {
       if (!cancelled) setManifest(result.manifest)
     }
 
-    void run()
+    // Delay the network check so first paint and the job board stay snappy.
+    const initial = window.setTimeout(() => void run(), 1500)
 
     // Long-lived app sessions pick the update up when the user comes back.
     let lastCheck = Date.now()
@@ -41,6 +42,7 @@ export function UpdatePrompt() {
 
     return () => {
       cancelled = true
+      window.clearTimeout(initial)
       document.removeEventListener('visibilitychange', onVisible)
     }
   }, [])
