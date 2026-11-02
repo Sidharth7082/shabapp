@@ -1,0 +1,32 @@
+#!/bin/sh
+# Blocks a commit that changes app code without updating the living plan.
+# This is what keeps PLAN.md honest even when nobody remembers to update it.
+# Intentional bypass: git commit --no-verify
+set -e
+
+staged=$(git diff --cached --name-only)
+
+# Docs, config or asset-only commits are fine.
+echo "$staged" | grep -qE '^(src|supabase)/' || exit 0
+# Code changed and the plan changed too: allowed.
+echo "$staged" | grep -qx 'PLAN.md' && exit 0
+
+cat <<'MSG'
+
+────────────────────────────────────────────────────────────────────
+  PLAN.md was not updated.
+────────────────────────────────────────────────────────────────────
+  This commit changes src/ or supabase/ but does not touch the
+  living plan that every AI agent and contributor reads first.
+
+  Add to PLAN.md:
+    • the status-board row that moved (with evidence)
+    • the ticked phase / backlog item and its blocker
+    • a dated changelog line, and bump "Last updated"
+
+  Docs-only, style-only or config-only commits are unaffected.
+  Deliberate bypass:  git commit --no-verify
+────────────────────────────────────────────────────────────────────
+
+MSG
+exit 1

@@ -189,15 +189,25 @@ This file is maintained by **rules, not by memory**:
    Claude, Codex, Cursor, Aider — to read this file before work and update it after.
 2. The rule is: **any commit that changes behaviour must change `PLAN.md` in the same commit**
    (status board row, backlog, changelog, and the `Last updated` date).
-3. CI runs typecheck/tests/build on every push and emits a warning annotation when `src/` or
-   `supabase/` changed without `PLAN.md`.
-4. When a phase item ships, tick it in §4, move the status row in §2 from `Pending` → `Live`,
+3. A **pre-commit hook** (`.githooks/pre-commit`, installed with `npm run setup:hooks`) blocks
+   any commit that touches `src/` or `supabase/` without staging `PLAN.md`. This is the
+   enforcement that works without anyone remembering the rule. Bypass with `--no-verify` only
+   for genuinely plan-neutral work.
+4. CI (`.github/workflows/ci.yml`) runs typecheck, tests and build on every push, re-checks the
+   camera-only invariant, and emits a warning annotation when code changed without `PLAN.md`.
+5. When a phase item ships, tick it in §4, move the status row in §2 from `Pending` → `Live`,
    add the evidence, and append a changelog line.
-5. When a new idea appears, put it in §5 with a priority and blocker instead of leaving it in
+6. When a new idea appears, put it in §5 with a priority and blocker instead of leaving it in
    chat history.
-6. Never delete old changelog entries; append.
+7. Never delete old changelog entries; append.
 
 ## 10. Changelog
+
+### 2026-11-02 — Repository + plan governance
+- Published the app as the private GitHub repo `shabapp` (`main` only).
+- Added this `PLAN.md`, `AGENTS.md` (agent rules), `.github/copilot-instructions.md`,
+  `.github/workflows/ci.yml` (typecheck, tests, build, camera-only check, plan-freshness
+  warning) and the `.githooks/pre-commit` plan guard (`npm run setup:hooks`).
 
 ### 2026-11-02 — Phase 1 complete
 - Recovered all four calculators from the live site; 92 SKUs with HSN + GST.

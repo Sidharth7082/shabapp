@@ -22,6 +22,11 @@ Any change in behaviour must update `PLAN.md` **in the same commit**:
 - Append a dated line to **§10 Changelog** (never edit old lines).
 - Update the **`Last updated`** date at the top.
 
+A **pre-commit hook** enforces this: `npm run setup:hooks` sets `core.hooksPath` to
+`.githooks`, and any commit touching `src/` or `supabase/` without staging `PLAN.md` is
+blocked with an explanatory message. Do not bypass it with `--no-verify` unless the change is
+plan-neutral (docs, config, formatting).
+
 If something is implemented but not exercised in a browser or covered by a test, write
 "implemented, not yet verified" — do not claim it works.
 
@@ -58,6 +63,7 @@ A task is done only when all of these are true:
 
 ```bash
 npm install
+npm run setup:hooks   # installs the PLAN.md pre-commit guard (run once per clone)
 npm run dev            # http://127.0.0.1:5173
 npx tsc --noEmit       # typecheck (tsc -b fails: no composite project)
 npm test               # 27 engine/helper tests

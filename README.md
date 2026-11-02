@@ -18,6 +18,7 @@ Offline-first PWA. The Android wrapper is planned via Capacitor.
 
 ```bash
 npm install
+npm run setup:hooks  # installs the pre-commit guard that keeps PLAN.md in sync
 npm run dev          # http://localhost:5173
 npm run build        # typecheck + production build
 npm test             # engine golden tests
