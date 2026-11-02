@@ -49,11 +49,11 @@ offline-first on IndexedDB and installs as a PWA; an Android wrapper via Capacit
 | Work-done OTP required to close the visit | **Demo** | Verified: footer blocked until the second code; verify set `workDoneOtpAt`; visit closed with sign-off and `completedLate` flagged |
 | Team locator (last known position) | **Live (last fix only)** | Control room shows on-site status, active visit, latest check-in/sign-off fix and a Maps link; live tracking needs Phase 2 |
 | Android app (debug APK) | **Live for testing** | Capacitor 8, `com.shabh.service`; verified on Pixel 6 / API 36: sign-in, OTP clock `59m 59s`, live camera 720×1280, photo + watermark + GPS ±5 m |
-| About screen | **Live** | Verified on device: About shows `Stable v0.2.1`, What’s new, Privacy, Third-party notices, website, proprietary footer |
+| About screen | **Live** | Verified on device (v0.2.2): About shows `Stable v0.2.2`, the v0.2.2 release notes, Privacy, Third-party notices, website and the proprietary footer |
 | Profile & settings | **Live** | Verified on device: Profile tab in the nav, header profile button, full name + `EMP-1042 · Technician`, target badge, sign-out, About & updates, admin control room |
 | Low-end performance | **Live** | Entry JS 50.2 KB (17.0 KB gzip); dashboard lives in the 26.1 KB `JobsScreen` route chunk, help sheet is a 2 KB lazy chunk; cold start **1.09 s** on the Pixel 6 emulator; proof photo **720×1280 / 18.9 KB** vs old 1392×1856 / 53.4 KB; update check deferred to idle; prefetch skipped on ≤4 GB / ≤4-core / save-data devices |
 | Phone layout | **Live** | Verified on device: login (quick accounts, show/hide PIN) and settings fit without cropping; 4-tab technician nav and 5-tab manager nav (73 px each on a 390 px viewport). Dashboard, login and help sheet re-checked at a 320 px-wide viewport in the browser with no horizontal overflow |
-| In-app update check | **Live** | Verified on device: installed v0.2.0 showed the real “New version available · v0.2.1” with release notes, Download opened the APK in Chrome, Not now suppressed it on relaunch; About manual check reports the latest version |
+| In-app update check | **Live** | Verified on device: installed v0.2.0 showed the real “New version available · v0.2.1” with release notes, Download opened the APK in Chrome, Not now suppressed it on relaunch; installed v0.2.2 reports `Stable v0.2.2` on About |
 | Live camera capture + burned watermark (before + after per service) | **Live** | Zero file inputs in the bundle (CI-checked) |
 | Checklists with Pass / Fail / N/A, issue capture | **Live** | Re-opening a service restores 9/9 states |
 | Completion sign-off + rating | **Live** | Blocked until every service is done |
