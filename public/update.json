@@ -1,13 +1,14 @@
 {
-  "version": "0.2.1",
+  "version": "0.2.2",
   "channel": "stable",
-  "releasedAt": "2026-11-02T18:37:49.269Z",
+  "releasedAt": "2026-11-02T19:05:11.428Z",
   "notes": [
-    "New Profile tab and header profile button: settings and profile are always reachable.",
-    "Redesigned login with one-tap demo accounts, show/hide PIN and a compact phone layout.",
-    "Performance: 1.09 s cold start, deferred update check, low-end prefetch gating and 1280 px proof photos.",
-    "Fixed stale JavaScript after an APK update by removing the caching service worker from native builds."
+    "Operations dashboard: alerts, today's overview with points % of target, pending services by job, quick actions, seven-day points chart, upcoming schedule and job history.",
+    "Search the service board by customer, job ID, location or status; filter Active / Today / Overdue / History / All.",
+    "Login: field validation, loading state, 5-attempt/30-second lockout, forgot-PIN help with administrator contact and keep-me-signed-in.",
+    "Brand mark on login, header and update sheet; the help sheet loads on demand.",
+    "Dashboard stays in the JobsScreen route chunk; 68 tests pass."
   ],
-  "apkUrl": "https://github.com/Sidharth7082/shabapp-releases/releases/download/v0.2.1/shabh-service-debug.apk?v=0.2.1",
-  "webUrl": "https://github.com/Sidharth7082/shabapp-releases/releases/tag/v0.2.1"
+  "apkUrl": "https://github.com/Sidharth7082/shabapp-releases/releases/download/v0.2.2/shabh-service-debug.apk?v=0.2.2",
+  "webUrl": "https://github.com/Sidharth7082/shabapp-releases/releases/tag/v0.2.2"
 }

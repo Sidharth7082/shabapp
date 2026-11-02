@@ -256,6 +256,13 @@ This file is maintained by **rules, not by memory**:
 
 ## 10. Changelog
 
+### 2026-11-02 — Release v0.2.2
+- Operations dashboard: alerts, today's overview with points % of target, pending services by job, quick actions, seven-day points chart, upcoming schedule and job history.
+- Search the service board by customer, job ID, location or status; filter Active / Today / Overdue / History / All.
+- Login: field validation, loading state, 5-attempt/30-second lockout, forgot-PIN help with administrator contact and keep-me-signed-in.
+- Brand mark on login, header and update sheet; the help sheet loads on demand.
+- Dashboard stays in the JobsScreen route chunk; 68 tests pass.
+
 ### 2026-11-03 — Dashboard depth + login hardening
 - Job board now carries the operational dashboard: needs-attention alerts (overdue, urgent,
   new assignment), today’s overview (completed / remaining / points with % of target / overdue
