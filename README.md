@@ -82,7 +82,7 @@ restores the seeded board.
 ## Verified behaviour
 
 - Typecheck is `npx tsc --noEmit` (the project has no composite build graph, so `tsc -b` fails).
-- 84 tests pass: the recovered engine arithmetic (gas stored weight, cylinder step-up, fill
+- 85 tests pass: the recovered engine arithmetic (gas stored weight, cylinder step-up, fill
   ceilings, detector rollups, GST totals, AMC visit counts), the visit-clock helpers, credit-tier
   windows, shift points per house, the employee-location helper, version comparison, the
   proof-photo size cap, dashboard search/filters/alerts/points helpers, login validation +
@@ -188,7 +188,7 @@ server-side OTP, a signed release APK and an HTTPS host with security headers. S
   self-destroying service worker instead, so app updates never serve stale JS).
 - **Modal a11y:** sheets trap Tab focus, focus the panel on open, close on `Escape`, lock body
   scroll, and restore focus to the trigger.
-- PWA build precaches 35 assets; `npx tsc --noEmit` and all 84 tests pass after the pass.
+- PWA build precaches 35 assets; `npx tsc --noEmit` and all 85 tests pass after the pass.
 
 ## Android app (test build)
 

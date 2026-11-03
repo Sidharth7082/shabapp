@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { readFileSync } from 'node:fs'
 import {
   isTrustedApkUrl,
   isTrustedReleaseUrl,
@@ -61,5 +62,12 @@ describe('update manifest validation', () => {
     })
     expect(manifest?.notes).toHaveLength(20)
     expect(manifest?.notes?.[0].length).toBe(500)
+  })
+
+  it('accepts the update.json that ships with this repository', () => {
+    const shipped = JSON.parse(
+      readFileSync(`${process.cwd()}/public/update.json`, 'utf8')
+    )
+    expect(sanitizeUpdateManifest(shipped)).not.toBeNull()
   })
 })

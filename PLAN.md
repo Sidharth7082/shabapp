@@ -8,7 +8,7 @@
 - **Last updated:** 2026-11-03
 - **Stage:** Phase 1 complete — production-ready offline PWA. Phase 2 (real OTP + multi-device
   sync) is next and is blocked on credentials.
-- **Health:** `npx tsc --noEmit` clean · `npm test` 84/84 pass · `npm run build` ok
+- **Health:** `npx tsc --noEmit` clean · `npm test` 85/85 pass · `npm run build` ok
 - **Repo:** private GitHub repo `shabapp` (see README for how to clone)
 
 ## 1. What we are building
@@ -130,7 +130,7 @@ offline-first on IndexedDB and installs as a PWA; an Android wrapper via Capacit
 - [x] Control room (create/assign/delete), role gating, reset demo data
 - [x] Insights dashboard
 - [x] Four estimate tools + saved estimates
-- [x] 84 engine/helper tests, PWA build, offline precache
+- [x] 85 engine/helper tests, PWA build, offline precache
 - [x] Accessibility pass: focus-trapped sheets, labels, reduced motion, 48 px targets
 - [x] Hardening: error boundary, lazy routes, transactions, invalid-date guards
 - [x] Performance: route splitting (`react` 206 kB / `data` 101 kB vendors, entry 42.5 kB),
@@ -237,7 +237,7 @@ offline-first on IndexedDB and installs as a PWA; an Android wrapper via Capacit
 
 ```bash
 npx tsc --noEmit      # must be clean (tsc -b does not work here)
-npm test              # 84 tests, engine golden values + tier/shift/team/version/capture/dashboard/login/session/credentials/update-manifest helpers
+npm test              # 85 tests, engine golden values + tier/shift/team/version/capture/dashboard/login/session/credentials/update-manifest helpers
 npm run build         # production build + PWA precache
 grep -o 'type:"file"' dist/assets/*.js | wc -l   # must print 0
 ```
@@ -270,6 +270,10 @@ This file is maintained by **rules, not by memory**:
 7. Never delete old changelog entries; append.
 
 ## 10. Changelog
+
+### 2026-11-03 — Release manifest guard
+- Added a test that runs the shipped `public/update.json` through the manifest validator, so a
+  release the app would reject now fails CI. 85 tests.
 
 ### 2026-11-03 — Release v0.2.3
 - Security: demo PINs are now salted PBKDF2 hashes and the demo PIN is no longer shown in the app.
