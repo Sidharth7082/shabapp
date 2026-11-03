@@ -288,6 +288,9 @@ This file is maintained by **rules, not by memory**:
 
 ## 10. Changelog
 
+### 2026-11-03 — Release v0.2.4
+- Four roles with separate panels: technicians see only their own visits, supervisors get live team status and job assignment, managers get team points and activity, admins get a people/roles/audit console. Reset demo data once to load the new team jobs.
+
 ### 2026-11-03 — Roles, team analytics, admin console and audit
 - Added technician / supervisor / manager / admin permissions and role-aware navigation,
   route guards, job scoping and action checks. Technicians only see and open their own visits.

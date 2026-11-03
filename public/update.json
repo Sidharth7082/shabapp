@@ -1,15 +1,10 @@
 {
-  "version": "0.2.3",
+  "version": "0.2.4",
   "channel": "stable",
-  "releasedAt": "2026-11-03T07:37:26.415Z",
+  "releasedAt": "2026-11-03T08:32:39.543Z",
   "notes": [
-    "Security: demo PINs are now salted PBKDF2 hashes and the demo PIN is no longer shown in the app.",
-    "Sessions expire after 12 hours, or 2 hours without interaction, with a clear sign-in notice.",
-    "Production builds enforce a strict content security policy and HTTPS-only Android network policy.",
-    "Android backups and WebView file access are disabled, tapjacking taps are filtered and remote debugging is off in release builds.",
-    "Update downloads are validated against the official release repository before opening.",
-    "Camera, dashboard and OTP flows are unchanged; 84 tests pass."
+    "Four roles with separate panels: technicians see only their own visits, supervisors get live team status and job assignment, managers get team points and activity, admins get a people/roles/audit console. Reset demo data once to load the new team jobs."
   ],
-  "apkUrl": "https://github.com/Sidharth7082/shabapp-releases/releases/download/v0.2.3/shabh-service-debug.apk?v=0.2.3",
-  "webUrl": "https://github.com/Sidharth7082/shabapp-releases/releases/tag/v0.2.3"
+  "apkUrl": "https://github.com/Sidharth7082/shabapp-releases/releases/download/v0.2.4/shabh-service-debug.apk?v=0.2.4",
+  "webUrl": "https://github.com/Sidharth7082/shabapp-releases/releases/tag/v0.2.4"
 }
