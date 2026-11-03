@@ -1,10 +1,10 @@
 {
-  "version": "0.2.4",
+  "version": "0.2.5",
   "channel": "stable",
-  "releasedAt": "2026-11-03T08:32:39.543Z",
+  "releasedAt": "2026-11-03T08:52:16.660Z",
   "notes": [
-    "Four roles with separate panels: technicians see only their own visits, supervisors get live team status and job assignment, managers get team points and activity, admins get a people/roles/audit console. Reset demo data once to load the new team jobs."
+    "Unknown or deleted job links now show a clear 'Job not found' state instead of loading forever. Role panels, team analytics and the admin console are unchanged."
   ],
-  "apkUrl": "https://github.com/Sidharth7082/shabapp-releases/releases/download/v0.2.4/shabh-service-debug.apk?v=0.2.4",
-  "webUrl": "https://github.com/Sidharth7082/shabapp-releases/releases/tag/v0.2.4"
+  "apkUrl": "https://github.com/Sidharth7082/shabapp-releases/releases/download/v0.2.5/shabh-service-debug.apk?v=0.2.5",
+  "webUrl": "https://github.com/Sidharth7082/shabapp-releases/releases/tag/v0.2.5"
 }

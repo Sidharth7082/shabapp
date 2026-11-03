@@ -288,6 +288,9 @@ This file is maintained by **rules, not by memory**:
 
 ## 10. Changelog
 
+### 2026-11-03 — Release v0.2.5
+- Unknown or deleted job links now show a clear 'Job not found' state instead of loading forever. Role panels, team analytics and the admin console are unchanged.
+
 ### 2026-11-03 — Missing job shows a not-found state
 - Job detail now distinguishes a pending query from a missing record. Unknown or deleted job IDs
   show “Job not found” with a back link instead of staying on “Loading job…” forever. Verified in
