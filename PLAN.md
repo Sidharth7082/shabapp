@@ -5,7 +5,7 @@
 > this file in the same change as the code. A task is **not done** until this plan matches
 > reality. Protocol: [Keeping this plan current](#9-keeping-this-plan-current).
 
-- **Last updated:** 2026-11-02
+- **Last updated:** 2026-11-03
 - **Stage:** Phase 1 complete — production-ready offline PWA. Phase 2 (real OTP + multi-device
   sync) is next and is blocked on credentials.
 - **Health:** `npx tsc --noEmit` clean · `npm test` 84/84 pass · `npm run build` ok
@@ -270,6 +270,14 @@ This file is maintained by **rules, not by memory**:
 7. Never delete old changelog entries; append.
 
 ## 10. Changelog
+
+### 2026-11-03 — Release v0.2.3
+- Security: demo PINs are now salted PBKDF2 hashes and the demo PIN is no longer shown in the app.
+- Sessions expire after 12 hours, or 2 hours without interaction, with a clear sign-in notice.
+- Production builds enforce a strict content security policy and HTTPS-only Android network policy.
+- Android backups and WebView file access are disabled, tapjacking taps are filtered and remote debugging is off in release builds.
+- Update downloads are validated against the official release repository before opening.
+- Camera, dashboard and OTP flows are unchanged; 84 tests pass.
 
 ### 2026-11-02 — Release v0.2.2
 - Operations dashboard: alerts, today's overview with points % of target, pending services by job, quick actions, seven-day points chart, upcoming schedule and job history.

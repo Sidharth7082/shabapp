@@ -1,14 +1,15 @@
 {
-  "version": "0.2.2",
+  "version": "0.2.3",
   "channel": "stable",
-  "releasedAt": "2026-11-02T19:05:11.428Z",
+  "releasedAt": "2026-11-03T07:37:26.415Z",
   "notes": [
-    "Operations dashboard: alerts, today's overview with points % of target, pending services by job, quick actions, seven-day points chart, upcoming schedule and job history.",
-    "Search the service board by customer, job ID, location or status; filter Active / Today / Overdue / History / All.",
-    "Login: field validation, loading state, 5-attempt/30-second lockout, forgot-PIN help with administrator contact and keep-me-signed-in.",
-    "Brand mark on login, header and update sheet; the help sheet loads on demand.",
-    "Dashboard stays in the JobsScreen route chunk; 68 tests pass."
+    "Security: demo PINs are now salted PBKDF2 hashes and the demo PIN is no longer shown in the app.",
+    "Sessions expire after 12 hours, or 2 hours without interaction, with a clear sign-in notice.",
+    "Production builds enforce a strict content security policy and HTTPS-only Android network policy.",
+    "Android backups and WebView file access are disabled, tapjacking taps are filtered and remote debugging is off in release builds.",
+    "Update downloads are validated against the official release repository before opening.",
+    "Camera, dashboard and OTP flows are unchanged; 84 tests pass."
   ],
-  "apkUrl": "https://github.com/Sidharth7082/shabapp-releases/releases/download/v0.2.2/shabh-service-debug.apk?v=0.2.2",
-  "webUrl": "https://github.com/Sidharth7082/shabapp-releases/releases/tag/v0.2.2"
+  "apkUrl": "https://github.com/Sidharth7082/shabapp-releases/releases/download/v0.2.3/shabh-service-debug.apk?v=0.2.3",
+  "webUrl": "https://github.com/Sidharth7082/shabapp-releases/releases/tag/v0.2.3"
 }
