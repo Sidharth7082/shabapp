@@ -29,12 +29,14 @@ import {
 import { NumberInput, Select, TextInput } from '@/components/ui/fields'
 import { toast } from '@/components/ui/toast'
 import { CHECKLIST_TEMPLATES } from '@/data/checklistTemplates'
-import { DEMO_EMPLOYEES } from '@/data/employees'
 import { JOB_KIND_LABEL, JOB_STATUS_LABEL, servicesDone } from '@/domain/jobs/types'
 import { employeeOnSite, latestEmployeePing } from '@/domain/jobs/team'
 import type { CreditTier, JobKind, ServiceJob } from '@/domain/jobs/types'
 import { createJob, deleteJob } from '@/services/jobs'
+import { effectiveTeam } from '@/services/people'
+import { logAudit } from '@/services/audit'
 import { useSession } from '@/services/session'
+import { can, ROLE_LABEL, isFieldRole } from '@/domain/auth/roles'
 
 const SYSTEMS = [
   'AC Service',
@@ -78,7 +80,8 @@ function timeAgo(iso: string): string {
 }
 
 function TeamCard({ jobs }: { jobs: ServiceJob[] }) {
-  const employees = DEMO_EMPLOYEES.filter((employee) => employee.role === 'technician')
+  const team = useLiveQuery(() => effectiveTeam(), [])
+  const employees = (team ?? []).filter((employee) => isFieldRole(employee.role))
 
   return (
     <Card className="p-4">
@@ -162,6 +165,9 @@ function TeamCard({ jobs }: { jobs: ServiceJob[] }) {
 
 function NewJobSheet({ onClose }: { onClose: () => void }) {
   const employee = useSession((state) => state.name)
+  const team = useLiveQuery(() => effectiveTeam(), [])
+  const fieldTeam = (team ?? []).filter((member) => isFieldRole(member.role))
+  const [assignedTo, setAssignedTo] = useState('')
   const [customerName, setCustomerName] = useState('')
   const [contactName, setContactName] = useState('')
   const [phone, setPhone] = useState('')
@@ -190,6 +196,7 @@ function NewJobSheet({ onClose }: { onClose: () => void }) {
     setBusy(true)
     setError(null)
     try {
+      const assignee = assignedTo || fieldTeam[0]?.name || employee
       await createJob({
         customerName,
         contactName: contactName || customerName,
@@ -206,8 +213,9 @@ function NewJobSheet({ onClose }: { onClose: () => void }) {
         slotStart: new Date(slotStart).toISOString(),
         slaMinutes: Number(slaMinutes) || 240,
         tier,
-        assignedTo: employee
+        assignedTo: assignee
       })
+      void logAudit('job_created', `${customerName.trim()} assigned to ${assignee}`)
       toast('Job created and assigned', 'ok')
       onClose()
     } catch {
@@ -260,6 +268,18 @@ function NewJobSheet({ onClose }: { onClose: () => void }) {
           value={slotStart}
           onChange={(e) => setSlotStart(e.target.value)}
         />
+        <Select
+          label="Assign to"
+          value={assignedTo || fieldTeam[0]?.name || ''}
+          onChange={(e) => setAssignedTo(e.target.value)}
+        >
+          {fieldTeam.length === 0 && <option value="">No field staff available</option>}
+          {fieldTeam.map((member) => (
+            <option key={member.id} value={member.name}>
+              {member.name} · {ROLE_LABEL[member.role]}
+            </option>
+          ))}
+        </Select>
         <Select
           label="Customer credit tier"
           value={String(tier)}
@@ -352,6 +372,7 @@ function NewJobSheet({ onClose }: { onClose: () => void }) {
 export function AdminScreen() {
   const jobs = useLiveQuery(() => db.jobs.toArray(), [])
   const role = useSession((state) => state.role)
+  const canDelete = can(role, 'jobs:delete')
   const [creating, setCreating] = useState(false)
 
   const stats = useMemo(() => {
@@ -394,15 +415,15 @@ export function AdminScreen() {
       })
   }, [jobs, query, statusFilter])
 
-  if (role !== 'admin') {
+  if (role === 'technician') {
     return (
       <div className="px-4 py-8">
         <EmptyState
-          title="Control room is admin-only"
-          body="Switch your role to Admin in Settings to create jobs and review the board."
+          title="Control room is for supervisors"
+          body="Ask a supervisor or manager to assign work. Your own visits stay on the Jobs tab."
           action={
-            <Link to="/settings" className="text-sm font-bold text-brand-600">
-              Open settings
+            <Link to="/" className="text-sm font-bold text-brand-600">
+              Back to jobs
             </Link>
           }
         />
@@ -542,7 +563,7 @@ export function AdminScreen() {
                     </div>
                   </Link>
 
-                  {job.status !== 'completed' && (
+                  {job.status !== 'completed' && canDelete && (
                     <div className="flex justify-end border-t border-surface-line bg-surface-sunken/60 px-3 py-1.5">
                       <button
                         type="button"
@@ -555,6 +576,7 @@ export function AdminScreen() {
                             return
                           }
                           await deleteJob(job.id)
+                          void logAudit('job_deleted', `${job.code} · ${job.customerName}`)
                           toast('Job removed', 'info')
                         }}
                         className="text-[10px] font-bold uppercase tracking-wide text-danger"

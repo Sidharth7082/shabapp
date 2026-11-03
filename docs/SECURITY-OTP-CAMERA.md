@@ -96,6 +96,9 @@ release script HEAD-probes the advertised URL before publishing the manifest.
 
 ### Residual risks
 
+- **Roles are client-side.** Four roles control navigation, routes, job scoping and actions; the
+  same matrix must be enforced by Supabase `profiles.role` + RLS. Team analytics and the audit
+  log are local to this device, and role overrides apply at the next sign-in.
 - One-tap demo accounts and the on-screen OTP bypass the PIN flow by design.
 - App data is app-sandboxed by Android but not encrypted at rest by the web layer; disabling
 backups prevents it leaving the device through Android backup/transfer.

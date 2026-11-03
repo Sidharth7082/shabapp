@@ -14,6 +14,7 @@ import {
 } from '@/components/ui/icons'
 import { useSession } from '@/services/session'
 import { servicesDone, type ServiceJob } from '@/domain/jobs/types'
+import { jobsForRole } from '@/domain/jobs/scope'
 import {
   BOARD_FILTERS,
   BOARD_FILTER_LABEL,
@@ -121,6 +122,7 @@ export function JobsScreen() {
   const jobs = useLiveQuery(() => db.jobs.toArray(), [])
   const [filter, setFilter] = useState<BoardFilter>('active')
   const [query, setQuery] = useState('')
+  const target = role === 'technician' ? dailyTarget : 0
 
   const {
     pendingRows,
@@ -135,7 +137,7 @@ export function JobsScreen() {
     visible,
     nextJob
   } = useMemo(() => {
-    const all = jobs ?? []
+    const all = jobsForRole(jobs ?? [], role, name)
     const now = new Date()
     const active = all.filter(isOpenJob)
     const ranked = [...active].sort((a, b) => {
@@ -150,7 +152,7 @@ export function JobsScreen() {
       pendingRows: pendingServicesByJob(all),
       pendingServices: totalPendingServices(all),
       openJobs: active.length,
-      overview: todayOverview(all, dailyTarget, now),
+      overview: todayOverview(all, target, now),
       alerts: dashboardAlerts(all, now),
       week: weeklyPoints(all, now),
       upcoming: upcomingJobs(all, now),
@@ -159,7 +161,7 @@ export function JobsScreen() {
       visible: filterBoardJobs(all, filter, query, now),
       nextJob: ranked[0]
     }
-  }, [jobs, dailyTarget, filter, query])
+  }, [jobs, target, filter, query, role, name])
 
   const showHistory = () => {
     setFilter('completed')
@@ -320,7 +322,7 @@ export function JobsScreen() {
         )}
       </section>
 
-      <PointsPanel week={week} points={overview.points} target={dailyTarget} />
+      <PointsPanel week={week} points={overview.points} target={target} />
 
       <SchedulePanel jobs={upcoming} />
 

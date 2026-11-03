@@ -30,13 +30,17 @@ describe('PIN hashing', () => {
 })
 
 describe('demo employee directory', () => {
-  it('signs in the demo technician and manager with hashed PINs', async () => {
+  it('signs in each role with its hashed PIN', async () => {
     expect((await authenticateEmployee('EMP-1042', '1234'))?.role).toBe('technician')
-    expect((await authenticateEmployee(' mgr-1001 ', '1234'))?.name).toBe('Priya Menon')
+    expect((await authenticateEmployee('EMP-1044', '2468'))?.role).toBe('technician')
+    expect((await authenticateEmployee('sup-2001', '4321'))?.role).toBe('supervisor')
+    expect((await authenticateEmployee(' mgr-1001 ', '5678'))?.name).toBe('Priya Menon')
+    expect((await authenticateEmployee('ADM-0001', '9012'))?.role).toBe('admin')
   })
 
   it('rejects the wrong PIN and unknown employee IDs', async () => {
     expect(await authenticateEmployee('EMP-1042', '9999')).toBeNull()
+    expect(await authenticateEmployee('MGR-1001', '1234')).toBeNull()
     expect(await authenticateEmployee('EMP-0000', '1234')).toBeNull()
   })
 })

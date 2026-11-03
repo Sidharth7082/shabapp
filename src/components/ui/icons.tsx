@@ -176,6 +176,14 @@ export const UserIcon = (p: IconProps) => (
   </Svg>
 )
 
+export const UsersIcon = (p: IconProps) => (
+  <Svg {...p}>
+    <circle cx="9" cy="8" r="3.2" />
+    <path d="M3 19a6 6 0 0 1 12 0" />
+    <path d="M16 5.4a3 3 0 0 1 0 5.9M18.5 19a5.7 5.7 0 0 0-3.1-5.1" />
+  </Svg>
+)
+
 export const SparkIcon = (p: IconProps) => (
   <Svg {...p}>
     <path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8L12 3z" />

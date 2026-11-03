@@ -1,6 +1,7 @@
 import { lazy } from 'react'
 import { createBrowserRouter } from 'react-router-dom'
 import { AppShell } from '@/components/layout/AppShell'
+import { RequirePermission } from '@/components/RequirePermission'
 import { LoginScreen } from '@/features/auth/LoginScreen'
 
 /**
@@ -42,6 +43,12 @@ const InsightsScreen = lazy(() =>
 const AdminScreen = lazy(() =>
   import('@/features/admin/AdminScreen').then((module) => ({ default: module.AdminScreen }))
 )
+const TeamScreen = lazy(() =>
+  import('@/features/team/TeamScreen').then((module) => ({ default: module.TeamScreen }))
+)
+const AdminConsole = lazy(() =>
+  import('@/features/admin/AdminConsole').then((module) => ({ default: module.AdminConsole }))
+)
 const SettingsScreen = lazy(() =>
   import('@/features/settings/SettingsScreen').then((module) => ({
     default: module.SettingsScreen
@@ -66,7 +73,30 @@ export const router = createBrowserRouter(
         { path: 'estimates/quotation', element: <QuotationBuilder /> },
         { path: 'estimates/amc', element: <AmcScreen /> },
         { path: 'insights', element: <InsightsScreen /> },
-        { path: 'admin', element: <AdminScreen /> },
+        {
+          path: 'team',
+          element: (
+            <RequirePermission permission="team:view">
+              <TeamScreen />
+            </RequirePermission>
+          )
+        },
+        {
+          path: 'control',
+          element: (
+            <RequirePermission permission="jobs:create">
+              <AdminScreen />
+            </RequirePermission>
+          )
+        },
+        {
+          path: 'admin',
+          element: (
+            <RequirePermission permission="admin:people">
+              <AdminConsole />
+            </RequirePermission>
+          )
+        },
         { path: 'settings', element: <SettingsScreen /> },
         { path: 'about', element: <AboutScreen /> }
       ]

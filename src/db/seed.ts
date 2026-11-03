@@ -200,10 +200,101 @@ function seed(): ServiceJob[] {
       slaDue: iso(8 * HOUR),
       createdAt: iso(-30 * MIN),
       issues: []
+    },
+    {
+      id: 'job_seed_8',
+      code: 'SH-1052',
+      customerName: 'Noida Public School',
+      contactName: 'Anita Deshpande',
+      phone: '9811122233',
+      address: 'Block C, Sector 62, Noida',
+      area: 'Sector 62',
+      kind: 'amc',
+      priority: 'normal',
+      status: 'started',
+      assignedTo: 'Sana Khan',
+      services: [
+        {
+          ...service('svc_8_1', 'Fire alarm panel health check', 'Fire Alarm', 'fire-alarm'),
+          status: 'done',
+          startedAt: iso(-35 * MIN),
+          completedAt: iso(-20 * MIN)
+        },
+        service('svc_8_2', 'Hydrant valve inspection', 'Hydrant', 'hydrant')
+      ],
+      slotStart: iso(-40 * MIN),
+      slaDue: iso(20 * MIN),
+      createdAt: iso(-2 * HOUR),
+      startedAt: iso(-35 * MIN),
+      otpVerifiedAt: iso(-35 * MIN),
+      workDueAt: iso(25 * MIN),
+      checkIn: { lat: 28.627, lng: 77.372, accuracy: 12, at: iso(-35 * MIN) },
+      issues: []
+    },
+    {
+      id: 'job_seed_9',
+      code: 'SH-1053',
+      customerName: 'DLF Mall of India',
+      contactName: 'Vikram Sethi',
+      phone: '9876543210',
+      address: 'Sector 18, Noida',
+      area: 'Sector 18',
+      kind: 'breakdown',
+      priority: 'normal',
+      status: 'completed',
+      assignedTo: 'Sana Khan',
+      services: [
+        {
+          ...service('svc_9_1', 'Fire pump control panel fault', 'Pump Room', 'pump-room'),
+          status: 'done',
+          startedAt: iso(-3 * HOUR),
+          completedAt: iso(-2 * HOUR - 30 * MIN)
+        },
+        {
+          ...service('svc_9_2', 'Jockey pump pressure test', 'Pump Room', 'pump-room'),
+          status: 'done',
+          startedAt: iso(-2 * HOUR - 30 * MIN),
+          completedAt: iso(-2 * HOUR)
+        }
+      ],
+      slotStart: iso(-3 * HOUR),
+      slaDue: iso(-2 * HOUR),
+      createdAt: iso(-5 * HOUR),
+      startedAt: iso(-3 * HOUR),
+      otpVerifiedAt: iso(-3 * HOUR),
+      workDoneOtpAt: iso(-2 * HOUR),
+      completedAt: iso(-2 * HOUR),
+      signoffName: 'Vikram Sethi',
+      rating: 5,
+      checkIn: { lat: 28.568, lng: 77.322, accuracy: 9, at: iso(-3 * HOUR) },
+      checkOut: { lat: 28.568, lng: 77.322, accuracy: 9, at: iso(-2 * HOUR) },
+      checkOutAt: iso(-2 * HOUR),
+      issues: []
+    },
+    {
+      id: 'job_seed_10',
+      code: 'SH-1054',
+      customerName: 'Sector 18 Clinic',
+      contactName: 'Dr. Neha Arora',
+      phone: '9899001122',
+      address: 'G-12, Sector 18, Noida',
+      area: 'Sector 18',
+      kind: 'survey',
+      priority: 'urgent',
+      status: 'assigned',
+      assignedTo: 'Rohan Iyer',
+      services: [
+        service('svc_10_1', 'Gas suppression site survey', 'Gas Suppression', 'gas-suppression'),
+        service('svc_10_2', 'Fire alarm coverage check', 'Fire Alarm', 'fire-alarm')
+      ],
+      slotStart: iso(2 * HOUR),
+      slaDue: iso(4 * HOUR),
+      createdAt: iso(-HOUR),
+      issues: []
     }
   ]
 
-  const tiers: CreditTier[] = [2, 2, 1, 2, 2, 2, 1]
+  const tiers: CreditTier[] = [2, 2, 1, 2, 2, 2, 1, 1, 2, 2]
   return base.map((job, index) => {
     const tier = tiers[index] ?? 2
     return { ...job, tier, workLimitMinutes: tierLimitMinutes(tier) }

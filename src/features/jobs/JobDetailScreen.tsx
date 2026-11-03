@@ -12,7 +12,8 @@ import {
   CheckIcon,
   NavigationIcon,
   PhoneIcon,
-  PinIcon
+  PinIcon,
+  ShieldIcon
 } from '@/components/ui/icons'
 import {
   JOB_KIND_LABEL,
@@ -27,6 +28,9 @@ import { OtpGate } from './OtpGate'
 import { ServiceFlow } from './ServiceFlow'
 import { CompleteJobSheet } from './CompleteJobSheet'
 import { JobTimer } from './JobTimer'
+import { useSession } from '@/services/session'
+import { canViewJob } from '@/domain/jobs/scope'
+import { ROLE_LABEL } from '@/domain/auth/roles'
 
 function ServiceRow({
   service,
@@ -185,6 +189,8 @@ function StatusTimeline({ job }: { job: ServiceJob }) {
 export function JobDetailScreen() {
   const { id } = useParams<{ id: string }>()
   const job = useLiveQuery(() => (id ? db.jobs.get(id) : undefined), [id])
+  const role = useSession((state) => state.role)
+  const employeeName = useSession((state) => state.name)
   const [openService, setOpenService] = useState<string | null>(null)
   const [completing, setCompleting] = useState(false)
 
@@ -199,6 +205,31 @@ export function JobDetailScreen() {
         <Link to="/" className="mt-4 block text-center text-sm font-semibold text-brand-600">
           Back to jobs
         </Link>
+      </div>
+    )
+  }
+
+  if (!canViewJob(job, role, employeeName)) {
+    return (
+      <div className="px-4 py-8">
+        <Card className="p-5 text-center">
+          <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-warn-soft text-warn">
+            <ShieldIcon size={22} />
+          </span>
+          <h1 className="mt-3 text-[18px] font-extrabold tracking-tight text-ink">
+            This visit is not yours
+          </h1>
+          <p className="mx-auto mt-1.5 max-w-xs text-[12px] leading-5 text-ink-mute">
+            You are signed in as <strong className="text-ink-soft">{ROLE_LABEL[role]}</strong>.
+            Only the assigned technician or a supervisor can open {job.code}.
+          </p>
+          <Link
+            to="/"
+            className="mt-4 inline-flex min-h-[44px] items-center justify-center rounded-xl bg-brand-600 px-4 text-[13px] font-bold text-white"
+          >
+            Back to my jobs
+          </Link>
+        </Card>
       </div>
     )
   }

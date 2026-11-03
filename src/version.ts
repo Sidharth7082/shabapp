@@ -13,12 +13,13 @@ export const WEBSITE_URL = 'https://shabhcreations.com/'
 
 /** Human-facing highlights for the installed build (About → What's new). */
 export const RELEASE_NOTES: string[] = [
-  'Security: demo PINs are stored as salted PBKDF2 hashes — no plaintext PIN ships in the app bundle.',
-  'Sessions now expire after 12 hours, or after 2 hours without interaction, with a clear sign-in notice.',
-  'Production builds enforce a strict content security policy and HTTPS-only network access.',
-  'Android: backups disabled, WebView file access off, tapjacking taps filtered and remote debugging off in release builds.',
-  'Update downloads are validated against the official release repository before opening.',
-  'Dashboard, login, camera proof and OTP flows are unchanged.'
+  'Four roles with separate panels: technician, supervisor, manager and admin.',
+  'Technicians only see and open their own visits; supervisors get live team status and job assignment.',
+  'Managers get team points, weekly performance, time on site and per-person job lists.',
+  'Admins get a separate admin console for people & roles, the audit log and security.',
+  'Audit log records sign-ins, failed attempts, role changes, job actions and demo resets.',
+  'Demo accounts: two one-tap technicians; supervisor, manager and admin require ID + PIN.',
+  'Reset demo data once to load the new seeded Sana and Rohan jobs.'
 ]
 
 /** Third-party components. The app itself is proprietary, not open source. */

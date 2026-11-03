@@ -26,15 +26,28 @@ npm run build        # typecheck + production build
 npm test             # engine golden tests
 ```
 
-The app opens with seven demo jobs. Sign in with the technician demo (`EMP-1042` / PIN
-`1234`) or the manager demo (`MGR-1001` / PIN `1234`). Settings → **Reset demo data**
-restores the seeded board.
+The app opens with ten demo jobs. Sign in with a technician one-tap account or use an employee
+ID + PIN:
+
+| Account | ID | PIN | Role |
+| --- | --- | --- | --- |
+| Aarav Sharma (one-tap) | `EMP-1042` | `1234` | Technician |
+| Sana Khan (one-tap) | `EMP-1044` | `2468` | Technician |
+| Rohan Iyer | `SUP-2001` | `4321` | Supervisor |
+| Priya Menon | `MGR-1001` | `5678` | Manager |
+| Shabh Admin | `ADM-0001` | `9012` | Admin |
+
+Privileged roles are PIN-only (no one-tap). PINs live in this README and are hashed in the app.
+Settings → **Reset demo data** restores the seeded board.
 
 ## What runs where
 
 | Area | State |
 | --- | --- |
-| Employee sign-in with ID + PIN | **Demo** — local directory, pinned to Supabase Auth in Phase 2 |
+| Employee sign-in with ID + PIN | **Demo** — five role accounts, PBKDF2 hashes, PIN-only for privileged roles |
+| Role-based access (technician / supervisor / manager / admin) | Live — route guards, nav, own-job scoping, action checks |
+| Team board (live status) + manager points/activity analytics | Live for this device |
+| Admin console: people & roles, audit log, security | Live for this device |
 | Job board, pending counts, today's visits | Live, local-first |
 | Multi-service visits (AC, solar, CCTV, chimney, RO, geyser, meter, fire systems) | Live, 13 checklist templates |
 | Shift points: 1 per completed house, target 12/day | Live |
@@ -48,22 +61,39 @@ restores the seeded board.
 | Team locator: on-site status, last check-in/sign-off fix, Maps link | Live for last-known position |
 | About screen + in-app update check (release notes, privacy, notices) | Live |
 | Customer OTP | **Demo** — generated on-device and shown in a labelled banner |
-| Supabase sync, SMS/WhatsApp delivery, multi-manager analytics | **Pending** — schema and functions included |
+| Supabase sync, SMS/WhatsApp delivery, server-enforced roles, multi-manager analytics | **Pending** — schema and functions included |
+
+## Roles
+
+| | Technician | Supervisor | Manager | Admin |
+| --- | --- | --- | --- | --- |
+| Jobs visible | own | all | all | all |
+| Live team status | — | yes | yes | yes |
+| Team points/activity | — | — | yes | yes |
+| Create / assign | — | yes | yes | yes |
+| Delete jobs | — | — | yes | yes |
+| People & roles | — | — | — | yes |
+| Audit log / security | — | — | — | yes |
+
+These gates are enforced in the client (nav, routes, screens, actions) and repeated in the job
+list for technicians. Production must mirror them in Supabase with `profiles.role` and RLS.
 
 ## Routes
 
 ```
-/login               Employee sign-in (demo accounts)
-/                    Jobs board + shift target (technician home)
+/login               Employee sign-in (two one-tap technicians, privileged PIN accounts)
+/                    Jobs board (technician: own visits) + dashboard
 /jobs/:id            Job detail, tier window, start OTP, service flow, work-done OTP
 /estimates           Tool hub + saved estimates
 /estimates/gas       Gas suppression BOQ
 /estimates/fire-alarm Fire alarm quantity BOQ
 /estimates/quotation Priced quotation builder
 /estimates/amc       AMC / CMC quote with rate card
-/insights            Time on site, issues, SLA, scorecard
-/admin               Control room
-/settings            Profile, storage, build status
+/team                Live team status + manager points/activity (supervisor+)
+/control             Control room: create/assign/delete jobs (supervisor+)
+/admin               Admin console: people, roles, audit, security (admin only)
+/insights            Time on site, issues, SLA, scorecard (own or team by role)
+/settings            Profile, security, storage, build status
 /about               Version, check for updates, release notes, privacy
 ```
 
@@ -82,15 +112,21 @@ restores the seeded board.
 ## Verified behaviour
 
 - Typecheck is `npx tsc --noEmit` (the project has no composite build graph, so `tsc -b` fails).
-- 85 tests pass: the recovered engine arithmetic (gas stored weight, cylinder step-up, fill
+- 106 tests pass: the recovered engine arithmetic (gas stored weight, cylinder step-up, fill
   ceilings, detector rollups, GST totals, AMC visit counts), the visit-clock helpers, credit-tier
   windows, shift points per house, the employee-location helper, version comparison, the
-  proof-photo size cap, dashboard search/filters/alerts/points helpers, login validation +
-  attempt limiting, PBKDF2 credentials, session expiry and update-manifest validation.
+  proof-photo size cap, dashboard helpers, login validation + attempt limiting, PBKDF2
+  credentials, session expiry, update-manifest validation, role permissions, job scoping,
+  team statistics, audit helpers and people overrides.
 - Gas wizard reproduces the site's numbers: a 5×4×3 m Novec Class C room with a 10 m pipe run
   gives 42.0 kg stored, one 80 L Ansul cylinder, and ₹3,02,596.84 including GST.
-- Sign-in: wrong PIN is rejected; either demo account opens the board with its own role and
-  shift target; sign-out returns to `/login`.
+- Sign-in: wrong PIN is rejected; each role opens its own nav and shift target; privileged roles
+  require ID + PIN. Verified in the browser: technician denied `/team`, `/control`, `/admin` and
+  another technician's job; supervisor denied `/admin` and job deletion; manager denied `/admin`;
+  admin changed a role and the audit log recorded it.
+- **Team & admin:** `/team` shows live status and, for managers/admins, points vs target,
+  weekly points, time on site and per-person jobs. `/admin` lists people, roles, the audit log
+  and security. Verified on the seeded Sana/Rohan jobs; role overrides take effect at next sign-in.
 - OTP: demo code issued, verified, services unlock, `otpVerifiedAt` recorded.
 - **Visit clock:** the timer starts when the start OTP is verified, using the customer's tier
   (`workDueAt = startedAt + tierLimit`). Verified on `SH-1048` (tier 2, 90 min): after OTP the
@@ -188,7 +224,7 @@ server-side OTP, a signed release APK and an HTTPS host with security headers. S
   self-destroying service worker instead, so app updates never serve stale JS).
 - **Modal a11y:** sheets trap Tab focus, focus the panel on open, close on `Escape`, lock body
   scroll, and restore focus to the trigger.
-- PWA build precaches 35 assets; `npx tsc --noEmit` and all 85 tests pass after the pass.
+- PWA build precaches 35 assets; `npx tsc --noEmit` and all 106 tests pass after the pass.
 
 ## Android app (test build)
 

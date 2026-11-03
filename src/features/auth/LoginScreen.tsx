@@ -18,6 +18,9 @@ import {
 } from '@/domain/auth/login'
 import { useSession } from '@/services/session'
 import { consumeSessionExpired } from '@/services/sessionExpiry'
+import { withOverride } from '@/services/people'
+import { logAudit } from '@/services/audit'
+import { ROLE_LABEL } from '@/domain/auth/roles'
 import { COMPANY_NAME } from '@/version'
 
 const LoginHelpSheet = lazy(() =>
@@ -120,15 +123,20 @@ export function LoginScreen() {
     setSelected(employee.id)
     clearFeedback()
     await new Promise((resolve) => window.setTimeout(resolve, 500))
+    const effective = await withOverride(employee)
     signIn(
       {
-        id: employee.id,
-        name: employee.name,
-        role: employee.role,
-        dailyTarget: employee.dailyTarget
+        id: effective.id,
+        name: effective.name,
+        role: effective.role,
+        dailyTarget: effective.dailyTarget
       },
       remember
     )
+    void logAudit('login', `Signed in as ${ROLE_LABEL[effective.role]}`, {
+      id: effective.id,
+      name: effective.name
+    })
     navigate('/', { replace: true })
   }
 
@@ -153,6 +161,11 @@ export function LoginScreen() {
     if (!employee) {
       setLoading(false)
       const next = failures + 1
+      const attemptedId = normalizeEmployeeId(employeeId) || 'unknown'
+      void logAudit('login_failed', `Employee ID ${attemptedId.slice(0, 16)}`, {
+        id: attemptedId,
+        name: 'Unknown'
+      })
       if (attemptsLeft(next) === 0) {
         const until = Date.now() + LOGIN_LOCK_MS
         setLockedUntil(until)
@@ -161,6 +174,10 @@ export function LoginScreen() {
         setFormError(null)
         writeStored(FAILURES_KEY, null)
         writeStored(LOCK_KEY, String(until))
+        void logAudit('lockout', 'Too many failed sign-in attempts', {
+          id: attemptedId,
+          name: 'Unknown'
+        })
       } else {
         setFailures(next)
         setFormError(failureMessage(next))
@@ -173,15 +190,20 @@ export function LoginScreen() {
     setFailures(0)
     writeStored(FAILURES_KEY, null)
     writeStored(LOCK_KEY, null)
+    const effective = await withOverride(employee)
     signIn(
       {
-        id: employee.id,
-        name: employee.name,
-        role: employee.role,
-        dailyTarget: employee.dailyTarget
+        id: effective.id,
+        name: effective.name,
+        role: effective.role,
+        dailyTarget: effective.dailyTarget
       },
       remember
     )
+    void logAudit('login', `Signed in as ${ROLE_LABEL[effective.role]}`, {
+      id: effective.id,
+      name: effective.name
+    })
     navigate('/', { replace: true })
   }
 
@@ -254,7 +276,7 @@ export function LoginScreen() {
           </div>
 
           <div className="mt-1.5 grid grid-cols-2 gap-2">
-            {DEMO_EMPLOYEES.map((employee) => {
+            {DEMO_EMPLOYEES.filter((employee) => employee.oneTap).map((employee) => {
               const busy = loading && selected === employee.id
               return (
                 <button
@@ -279,7 +301,7 @@ export function LoginScreen() {
                       {employee.name.split(' ')[0]}
                     </span>
                     <span className="block truncate text-[9px] text-ink-mute">
-                      {employee.role === 'admin' ? 'Manager' : 'Technician'}
+                      {ROLE_LABEL[employee.role]}
                     </span>
                   </span>
                   {busy ? (
@@ -294,6 +316,11 @@ export function LoginScreen() {
               )
             })}
           </div>
+
+          <p className="mt-2 text-[10px] leading-4 text-ink-mute">
+            Supervisor, manager and admin demo accounts sign in with their employee ID and PIN
+            (documented with the project). One-tap is technician-only.
+          </p>
 
           <div className="my-3 flex items-center gap-2">
             <span className="h-px flex-1 bg-surface-line" />

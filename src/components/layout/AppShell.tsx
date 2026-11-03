@@ -8,20 +8,49 @@ import {
   CalculatorIcon,
   ChartIcon,
   ShieldIcon,
-  UserIcon
+  UserIcon,
+  UsersIcon,
+  WrenchIcon
 } from '@/components/ui/icons'
 import { LogoMark } from '@/components/ui/LogoMark'
 import { useSession } from '@/services/session'
+import { logAudit } from '@/services/audit'
 import { markSessionExpired } from '@/services/sessionExpiry'
 import { SESSION_ACTIVITY_THROTTLE_MS, sessionExpired } from '@/domain/auth/session'
+import { can, ROLE_LABEL, type Permission, type Role } from '@/domain/auth/roles'
 
-const NAV = [
+interface NavItem {
+  to: string
+  label: string
+  icon: (props: { size?: number; strokeWidth?: number }) => JSX.Element
+  end?: boolean
+  permission?: Permission
+}
+
+const NAV: NavItem[] = [
   { to: '/', label: 'Jobs', icon: BriefcaseIcon, end: true },
-  { to: '/estimates', label: 'Estimate', icon: CalculatorIcon, end: false },
-  { to: '/insights', label: 'Insights', icon: ChartIcon, end: false },
-  { to: '/admin', label: 'Control', icon: ShieldIcon, end: false },
-  { to: '/settings', label: 'Profile', icon: UserIcon, end: false }
+  { to: '/team', label: 'Team', icon: UsersIcon, permission: 'team:view' },
+  { to: '/control', label: 'Control', icon: WrenchIcon, permission: 'jobs:create' },
+  { to: '/admin', label: 'Admin', icon: ShieldIcon, permission: 'admin:people' },
+  { to: '/estimates', label: 'Estimate', icon: CalculatorIcon },
+  { to: '/insights', label: 'Insights', icon: ChartIcon },
+  { to: '/settings', label: 'Profile', icon: UserIcon }
 ]
+
+/** Keep the bottom bar at four or five items; extra screens are linked in context. */
+const HIDDEN_BY_ROLE: Record<Role, string[]> = {
+  technician: [],
+  supervisor: ['/insights'],
+  manager: ['/insights'],
+  admin: ['/control', '/insights']
+}
+
+function navigationFor(role: Role): NavItem[] {
+  const hidden = HIDDEN_BY_ROLE[role]
+  return NAV.filter(
+    (item) => !hidden.includes(item.to) && (!item.permission || can(role, item.permission))
+  )
+}
 
 function useOnline(): boolean {
   const [online, setOnline] = useState(() => navigator.onLine)
@@ -52,7 +81,7 @@ export function AppShell() {
   const online = useOnline()
   const navigate = useNavigate()
   const lastTouch = useRef(0)
-  const nav = role === 'admin' ? NAV : NAV.filter((item) => item.to !== '/admin')
+  const nav = navigationFor(role)
 
   useEffect(() => {
     if (!signedIn) return
@@ -60,6 +89,7 @@ export function AppShell() {
       const state = useSession.getState()
       if (!state.signedIn) return
       if (sessionExpired(state)) {
+        void logAudit('session_expired', 'Idle or absolute timeout')
         markSessionExpired()
         state.signOut()
         navigate('/login?expired=1', { replace: true })
@@ -114,7 +144,7 @@ export function AppShell() {
                 Shabh Service
               </span>
               <span className="block truncate text-[11px] leading-tight text-ink-mute">
-                {name} · {role === 'admin' ? 'Manager' : 'Technician'}
+                {name} · {ROLE_LABEL[role]}
               </span>
             </span>
           </Link>

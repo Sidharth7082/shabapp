@@ -30,12 +30,18 @@ export function LoginHelpSheet({
             <Badge tone="warn">Demo</Badge>
           </div>
           <p className="mt-1 text-[12px] leading-5 text-ink-mute">
-            Tap Aarav or Priya above to sign in without typing a PIN. Manual sign-in uses the
+            Tap Aarav or Sana above to sign in without typing a PIN. Manual sign-in uses the
             employee ID and demo PIN from the project documentation; the PIN is not shown in the
             app.
           </p>
+          <p className="mt-2 text-[11px] leading-5 text-ink-mute">
+            Privileged demo IDs: <strong className="text-ink-soft">SUP-2001</strong> supervisor,{' '}
+            <strong className="text-ink-soft">MGR-1001</strong> manager,{' '}
+            <strong className="text-ink-soft">ADM-0001</strong> admin. They require their employee
+            ID + PIN.
+          </p>
           <Button variant="secondary" full className="mt-3" onClick={onFillDemo}>
-            Fill employee ID
+            Fill technician ID
           </Button>
         </div>
 

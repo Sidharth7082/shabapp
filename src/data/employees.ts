@@ -1,6 +1,7 @@
 import { verifyPin, type PinCredential } from '@/domain/auth/credentials'
+import type { Role } from '@/domain/auth/roles'
 
-export type EmployeeRole = 'technician' | 'admin'
+export type EmployeeRole = Role
 
 export interface DemoEmployee {
   id: string
@@ -10,6 +11,8 @@ export interface DemoEmployee {
   dailyTarget: number
   /** PBKDF2 hash of the demo PIN — no plaintext PIN is shipped in the bundle. */
   credential: PinCredential
+  /** Only technician demo accounts may sign in with one tap. */
+  oneTap: boolean
 }
 
 /**
@@ -27,6 +30,7 @@ export const DEMO_EMPLOYEES: DemoEmployee[] = [
     name: 'Aarav Sharma',
     role: 'technician',
     dailyTarget: 12,
+    oneTap: true,
     credential: {
       salt: 'G14yGkBmzeiyCk295Hj+zA==',
       hash: 'hd5mJdHoEIxknVi8GxW3kU7ppB4TAJrWJ88TDd+93NM=',
@@ -34,13 +38,50 @@ export const DEMO_EMPLOYEES: DemoEmployee[] = [
     }
   },
   {
+    id: 'EMP-1044',
+    name: 'Sana Khan',
+    role: 'technician',
+    dailyTarget: 10,
+    oneTap: true,
+    credential: {
+      salt: 'dbGyJW0LlxxiLP6+22R6rA==',
+      hash: 'HmuE+r6Wd7YjC1js8P06oaCuPn/tS+p888gQuWjgDAQ=',
+      iterations: 210_000
+    }
+  },
+  {
+    id: 'SUP-2001',
+    name: 'Rohan Iyer',
+    role: 'supervisor',
+    dailyTarget: 8,
+    oneTap: false,
+    credential: {
+      salt: '1PTUzkBY8AMgcNUe60j2fA==',
+      hash: 'ltiLAGdjq+skAoNDSFdTK5GmSSkAoheYW7o5h94goPs=',
+      iterations: 210_000
+    }
+  },
+  {
     id: 'MGR-1001',
     name: 'Priya Menon',
+    role: 'manager',
+    dailyTarget: 0,
+    oneTap: false,
+    credential: {
+      salt: 'Eteys0pim2cM0kt5upG42g==',
+      hash: 'Zq12HXvUk2qd6mS6umE1vaKDB41AYaXgFncHABzb/nA=',
+      iterations: 210_000
+    }
+  },
+  {
+    id: 'ADM-0001',
+    name: 'Shabh Admin',
     role: 'admin',
     dailyTarget: 0,
+    oneTap: false,
     credential: {
-      salt: 'LXMliS5vBO0kghaBF9rHaw==',
-      hash: 'VC/pTINhh7FH5u9q5ROYGxgExjolzFSlRHKmKxlBLlQ=',
+      salt: '7jG36WGeo9+HsSIwn+4skw==',
+      hash: 'qMf4e3Kakoeg8YfSM0vxNE+IsyUhomM3e0gMbYc7ZoY=',
       iterations: 210_000
     }
   }

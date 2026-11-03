@@ -24,6 +24,7 @@ import {
   type TodayOverview
 } from '@/domain/jobs/dashboard'
 import type { ServiceJob } from '@/domain/jobs/types'
+import { can, type Role } from '@/domain/auth/roles'
 
 const alertTones: Record<DashboardAlert['tone'], string> = {
   danger: 'bg-danger-soft text-danger',
@@ -213,7 +214,7 @@ export function QuickActionsPanel({
   role,
   nextJob
 }: {
-  role: 'technician' | 'admin'
+  role: Role
   nextJob?: ServiceJob
 }) {
   const actionClass =
@@ -224,8 +225,8 @@ export function QuickActionsPanel({
     <section className="px-4">
       <SectionHeader title="Quick actions" subtitle="The three things you do most" />
       <div className="grid grid-cols-3 gap-2">
-        {role === 'admin' ? (
-          <Link to="/admin" className={actionClass}>
+        {can(role, 'jobs:create') ? (
+          <Link to="/control" className={actionClass}>
             <span className={iconClass}>
               <PlusIcon size={16} />
             </span>

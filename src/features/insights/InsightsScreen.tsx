@@ -5,6 +5,8 @@ import { db } from '@/db/db'
 import { Badge, Card, EmptyState, SectionHeader, Stat } from '@/components/ui/display'
 import { AlertIcon, CheckIcon, ClockIcon, TimerIcon } from '@/components/ui/icons'
 import { formatDuration } from '@/domain/shared/id'
+import { useSession } from '@/services/session'
+import { can } from '@/domain/auth/roles'
 
 type Period = '7' | '30'
 
@@ -12,10 +14,14 @@ const DAY = 86_400_000
 
 export function InsightsScreen() {
   const jobs = useLiveQuery(() => db.jobs.toArray(), [])
+  const role = useSession((state) => state.role)
+  const name = useSession((state) => state.name)
   const [period, setPeriod] = useState<Period>('7')
 
   const data = useMemo(() => {
-    const all = jobs ?? []
+    const all = can(role, 'team:analytics')
+      ? jobs ?? []
+      : (jobs ?? []).filter((job) => job.assignedTo === name)
     const days = Number(period)
     const since = Date.now() - days * DAY
 
@@ -98,7 +104,7 @@ export function InsightsScreen() {
       firstTimeFix,
       week
     }
-  }, [jobs, period])
+  }, [jobs, period, role, name])
 
   const maxBar = Math.max(1, ...data.week.map((day) => day.count))
   const completionRate = data.plannedCount > 0 ? Math.round((data.completedPlannedCount / data.plannedCount) * 100) : 0
@@ -108,7 +114,7 @@ export function InsightsScreen() {
       <header>
         <p className="text-[10px] font-bold uppercase tracking-widest text-ink-mute">Performance</p>
         <h1 className="mt-1 text-[26px] font-extrabold leading-tight tracking-tight text-ink">
-          Productivity
+          {can(role, 'team:analytics') ? 'Team productivity' : 'My productivity'}
         </h1>
         <p className="mt-1 text-[13px] text-ink-mute">
           Time on site first, then issues and SLA health.

@@ -8,7 +8,7 @@
 - **Last updated:** 2026-11-03
 - **Stage:** Phase 1 complete — production-ready offline PWA. Phase 2 (real OTP + multi-device
   sync) is next and is blocked on credentials.
-- **Health:** `npx tsc --noEmit` clean · `npm test` 85/85 pass · `npm run build` ok
+- **Health:** `npx tsc --noEmit` clean · `npm test` 106/106 pass · `npm run build` ok
 - **Repo:** private GitHub repo `shabapp` (see README for how to clone)
 
 ## 1. What we are building
@@ -29,8 +29,10 @@ places:
    suppression, fire alarm, quotation builder, AMC) running offline with the real catalog,
    HSN codes and 18% GST.
 
-Managers get a control room to create/assign work and an insights screen. Everything is
-offline-first on IndexedDB and installs as a PWA; an Android wrapper via Capacitor is planned.
+Managers get a control room to create/assign work and team points/analytics; supervisors run
+the live team board and control room; technicians see only their own visits; admins get a
+separate console for people, roles, audit and security. Everything is offline-first on
+IndexedDB and installs as a PWA; an Android wrapper via Capacitor is planned.
 
 ## 2. Status board
 
@@ -39,8 +41,11 @@ offline-first on IndexedDB and installs as a PWA; an Android wrapper via Capacit
 
 | Area | State | Notes / evidence |
 | --- | --- | --- |
-| Job board and dashboard | **Live** | Board with customer, location, services, priority and status; search by customer / job ID / location / status; Active / Today / Overdue / History / All filters; “Needs attention” alerts (overdue, urgent, new assignment); today’s overview with points % and overdue job; pending-services breakdown by job; quick actions; upcoming schedule; recent history. Verified in the browser on seeded and created jobs |
-| Employee sign-in with employee ID + PIN | **Demo** | Verified: field validation (ID format, PIN length), PBKDF2 verification (wrong PIN shows attempts left), 5 failures lock for 30 s with a countdown, loading state, show/hide PIN, forgot-PIN help sheet, one-tap demo accounts, “keep me signed in” (localStorage vs sessionStorage) and a 12 h / 2 h idle session expiry. Still a demo — production is Supabase Auth |
+| Job board and dashboard | **Live** | Role-scoped: technicians see only their own visits; supervisors, managers and admins see all. Board with customer, location, services, priority/status; search and filters; alerts; overview; pending breakdown; quick actions; schedule; history. Verified in the browser |
+| Role access (technician / supervisor / manager / admin) | **Live** | Permission map in `domain/auth/roles.ts`; nav, route guards, job scoping and action checks use it. Verified in the browser: technician is denied `/team`, `/control`, `/admin` and another tech’s job; supervisor is denied `/admin` and delete; manager is denied `/admin`; admin reaches everything. Client-side only — server RLS remains Phase 2 |
+| Employee sign-in with employee ID + PIN | **Demo** | Five demo accounts: Aarav + Sana (technicians, one-tap), Rohan (supervisor), Priya (manager), Shabh Admin (admin). Privileged roles require ID + PIN; PBKDF2 hashes; attempt lockout; session expiry. Production is Supabase Auth |
+| Team board & manager analytics | **Live** | `/team`: live status, active job/timer, next job, last activity and location. Managers/admins additionally see points vs target, weekly points, time on site and a per-person job sheet. Supervisors see live status only. Verified in the browser on seeded Sana/Rohan jobs |
+| Admin console & audit log | **Live** | `/admin` (admin only): people & local role/target overrides (self-row locked), audit log of sign-ins, failures, role/target changes, job create/delete and demo resets, plus security overview. Verified: role changed to supervisor, audit entries recorded, next sign-in opened the new role |
 | Shift points: 1 per completed house, target 12/day | **Live** | Verified: one 5-service house showed `1 / 12 points`; extra houses are shown as extra points |
 | Customer credit tiers: only tier 1 (60 min) and tier 2 (90 min) | **Live** | Tier badge on job cards, job sheet and control-room rows; verified SH-1051 as tier 1 |
 | Multi-service visit (AC, solar, CCTV, chimney, RO, geyser, meter, fire systems) | **Live** | 13 checklist templates; SH-1051 holds CCTV, chimney, RO, geyser and meter |
@@ -50,7 +55,7 @@ offline-first on IndexedDB and installs as a PWA; an Android wrapper via Capacit
 | Team locator (last known position) | **Live (last fix only)** | Control room shows on-site status, active visit, latest check-in/sign-off fix and a Maps link; live tracking needs Phase 2 |
 | Android app (debug APK) | **Live for testing** | Capacitor 8, `com.shabh.service`; verified on Pixel 6 / API 36: sign-in, OTP clock `59m 59s`, live camera 720×1280, photo + watermark + GPS ±5 m |
 | About screen | **Live** | Verified on device (v0.2.3): About shows `Stable v0.2.3`, the v0.2.3 security notes, Privacy, Third-party notices, website and the proprietary footer |
-| Profile & settings | **Live** | Verified on device: Profile tab in the nav, header profile button, full name + `EMP-1042 · Technician`, target badge, sign-out, About & updates, admin control room. Security card lists the session deadline and device protections |
+| Profile & settings | **Live** | Verified: role label, read-only employee record, session/security card, links to Team/Control/Admin console by permission, About & updates. Name/role/target are changed only by an admin |
 | Security hardening | **Live** | Demo PINs are PBKDF2-SHA256 hashes with per-employee salts and the demo PIN is not displayed in the app (only in repo docs), sessions expire after 12 h / 2 h idle, production CSP is same-origin scripts only, Android blocks cleartext + user CAs with backups off and WebView file access off, and the update manifest allows only HTTPS release-repo URLs. Verified in the production preview and on the APK (hashed login, Security card, live camera readyState 4). The demo one-tap accounts and on-device OTP remain demo-only |
 | Low-end performance | **Live** | Entry JS 52.6 KB (17.9 KB gzip); dashboard lives in the 26.1 KB `JobsScreen` route chunk, help sheet is a 2 KB lazy chunk; cold start **1.09 s** on the Pixel 6 emulator; proof photo **720×1280 / 18.9 KB** vs old 1392×1856 / 53.4 KB; update check deferred to idle; prefetch skipped on ≤4 GB / ≤4-core / save-data devices |
 | Phone layout | **Live** | Verified on device: login (quick accounts, show/hide PIN) and settings fit without cropping; 4-tab technician nav and 5-tab manager nav (73 px each on a 390 px viewport). Dashboard, login and help sheet re-checked at a 320 px-wide viewport in the browser with no horizontal overflow |
@@ -62,8 +67,8 @@ offline-first on IndexedDB and installs as a PWA; an Android wrapper via Capacit
 | Fire alarm engine (NFPA 72) | **Live** | Detector/MCP/hooter/module/cable rollups, brand panels |
 | Quotation builder (92 SKUs, HSN, GST) | **Live** | 3-line sample: subtotal ₹68,169.70 → total ₹80,440.25 |
 | AMC / CMC quote | **Live (scope) / Pending (rates)** | No published rates; editable rate card persisted locally |
-| Insights (time on site, completion, SLA health) | **Live for this device** | Future-scheduled jobs excluded from "planned" |
-| Control room (create / assign / delete) | **Live for this device** | Admin-only route, delete confirmations |
+| Insights (time on site, completion, SLA health) | **Live for this device** | Scoped to the signed-in technician; supervisors/managers/admins see the team. Future-scheduled jobs excluded from "planned" |
+| Control room (create / assign / delete) | **Live for this device** | `/control`, supervisor+; create/assign for supervisors, delete manager/admin only. Assignee selector uses the field roster; team link goes to `/team` |
 | Offline PWA, service-worker precache | **Live** | 35 assets / 568 kB precache (web build); native builds emit a self-destroying SW instead |
 | Supabase schema, RLS, OTP edge functions | **Pending** | Migration + function code written, never deployed |
 | Real OTP delivery (SMS/WhatsApp) | **Pending** | Blocked on Supabase project + MSG91 DLT template |
@@ -99,6 +104,10 @@ offline-first on IndexedDB and installs as a PWA; an Android wrapper via Capacit
     update manifest is restricted to HTTPS links in the release repository).
 12. **Stay light for low-end phones.** No new eager dependency; keep the entry bundle within
     budget, cap proof photos at 1280 px, and gate idle prefetch on device memory / save-data.
+13. **Respect the role matrix.** Navigation, routes, screens and actions read
+    `src/domain/auth/roles.ts`. Technicians only see their own jobs; supervisor = live team +
+    assignment; manager = team analytics + delete; admin = people/roles/audit/security. These
+    client gates must be mirrored by Supabase RLS in production.
 
 ## 4. Phases
 
@@ -112,6 +121,10 @@ offline-first on IndexedDB and installs as a PWA; an Android wrapper via Capacit
 - [x] Dexie data model for jobs, services, photos, estimates, settings
 - [x] Employee sign-in (demo directory) with route guard and sign-out
 - [x] One-tap demo sign-in, compact phone layout, show/hide PIN
+- [x] Four roles with permission map, route guards, nav by role, own-job scoping for technicians
+- [x] Team board for supervisors and points/activity analytics for managers
+- [x] Admin console (people & roles, audit log, security) and local role overrides
+- [x] Technician one-tap only; privileged demo accounts require ID + PIN
 - [x] Login hardening: field validation, attempt limit + lockout countdown, loading state, forgot-PIN help sheet, session remember toggle
 - [x] Dashboard: needs-attention alerts, today’s overview with points percentage, pending breakdown by job, search + filters, quick actions, upcoming schedule, recent history
 - [x] Profile tab in the bottom nav + header profile button; profile card with employee ID and target
@@ -130,7 +143,7 @@ offline-first on IndexedDB and installs as a PWA; an Android wrapper via Capacit
 - [x] Control room (create/assign/delete), role gating, reset demo data
 - [x] Insights dashboard
 - [x] Four estimate tools + saved estimates
-- [x] 85 engine/helper tests, PWA build, offline precache
+- [x] 106 engine/helper tests, PWA build, offline precache
 - [x] Accessibility pass: focus-trapped sheets, labels, reduced motion, 48 px targets
 - [x] Hardening: error boundary, lazy routes, transactions, invalid-date guards
 - [x] Performance: route splitting (`react` 206 kB / `data` 101 kB vendors, entry 42.5 kB),
@@ -194,6 +207,7 @@ offline-first on IndexedDB and installs as a PWA; an Android wrapper via Capacit
 | 15 | Live employee tracking (realtime map) | P2 | Sync (#5) + GPS reliability | 2 days |
 | 16 | Move the update manifest/APK to company-controlled storage (Supabase or shabhcreations.com) | P2 | User to provide storage | 0.5 day |
 | 17 | Signed release APK + screen-capture protection (`FLAG_SECURE`) | P1 | Release keystore / Play Console account | 0.5 day |
+| 18 | Server-side roles: `profiles.role`, RLS for jobs/team/audit, server-side role changes | P0 | Supabase project (#1) | 1 day |
 
 ## 6. Open questions for the user
 
@@ -224,6 +238,9 @@ offline-first on IndexedDB and installs as a PWA; an Android wrapper via Capacit
   and only when the device grants GPS. If the manager's device has not synced, it shows the last
   position stored locally. Live tracking is backlog item #15.\n- Gas pricing exists only for Ansul and Cryptzo in the source tool; other brands need rates.
 - The app is single-device until sync lands; the control room shows only local jobs.
+- **Roles are client-side only.** A device owner can edit local storage; production must enforce
+  the same permission map in Supabase with `profiles.role` and RLS. Team data and the audit log
+  are local to this device; role overrides apply at the next sign-in.
 - **Client-side hardening has limits.** Hashed PINs, the attempt counter and session expiry stop
   casual access, but someone who controls the device or its storage can still tamper. Real
   guarantees need server-side auth and OTP (Phase 2) and a signed release build.
@@ -237,7 +254,7 @@ offline-first on IndexedDB and installs as a PWA; an Android wrapper via Capacit
 
 ```bash
 npx tsc --noEmit      # must be clean (tsc -b does not work here)
-npm test              # 85 tests, engine golden values + tier/shift/team/version/capture/dashboard/login/session/credentials/update-manifest helpers
+npm test              # 106 tests, engine golden values + tier/shift/team/version/capture/dashboard/login/session/credentials/update-manifest/roles/scope/team-stats/audit/people helpers
 npm run build         # production build + PWA precache
 grep -o 'type:"file"' dist/assets/*.js | wc -l   # must print 0
 ```
@@ -270,6 +287,21 @@ This file is maintained by **rules, not by memory**:
 7. Never delete old changelog entries; append.
 
 ## 10. Changelog
+
+### 2026-11-03 — Roles, team analytics, admin console and audit
+- Added technician / supervisor / manager / admin permissions and role-aware navigation,
+  route guards, job scoping and action checks. Technicians only see and open their own visits.
+- Added `/team` with live status for supervisors and points/activity analytics for managers,
+  `/control` for job creation/assignment and an admin-only `/admin` console for people, roles,
+  audit and security.
+- Added a local audit log (sign-ins, failures, lockouts, role/target changes, job create/delete,
+  demo resets) and local role/target overrides applied at next sign-in.
+- Demo accounts: Aarav + Sana one-tap technicians; Rohan supervisor, Priya manager, Shabh Admin
+  admin require ID + PIN.
+- Added seeded Sana/Rohan jobs so team analytics has real data; existing devices need Reset demo
+  data. Added 21 tests (106 total).
+- Supervisor insights are scoped to their own visits and the dashboard no longer applies a
+  personal target to a supervisor/manager team view.
 
 ### 2026-11-03 — Release manifest guard
 - Added a test that runs the shipped `public/update.json` through the manifest validator, so a

@@ -17,7 +17,7 @@ Do not re-derive the architecture from scratch and do not guess at recovered con
 Any change in behaviour must update `PLAN.md` **in the same commit**:
 
 - Flip the matching row in **§2 Status board** (`Pending` → `Live`, or `Live` → `Broken`),
-  with evidence ("verified on SH-1042", "85/85 tests", screenshot/route).
+  with evidence ("verified on SH-1042", "106/106 tests", screenshot/route).
 - Tick or add items in **§4 Phases** and **§5 Backlog** (priority + blocker).
 - Append a dated line to **§10 Changelog** (never edit old lines).
 - Update the **`Last updated`** date at the top.
@@ -73,7 +73,7 @@ npm install
 npm run setup:hooks   # installs the PLAN.md pre-commit guard (run once per clone)
 npm run dev            # http://127.0.0.1:5173
 npx tsc --noEmit       # typecheck (tsc -b fails: no composite project)
-npm test               # 85 engine/helper tests
+npm test               # 106 engine/helper tests
 npm run build          # tsc --noEmit && vite build (PWA precache)
 npm run android:apk    # build + cap sync + Android debug APK
 npm run release        # ship a build: version + APK + update manifest + changelog

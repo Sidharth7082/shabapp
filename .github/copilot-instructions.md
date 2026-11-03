@@ -29,7 +29,12 @@ verified in a browser or by a test, label it "implemented, not yet verified".
   Never add a `.env`, key, token or customer data to the repo or the JS bundle.
 - **Geolocation is fire-and-forget**; never await it when verifying OTP or completing a job.
 - Job/service writes go through `db.transaction('rw', db.jobs, …)`.
-- Keep the technician role out of `/admin`; keep screens lazy-loaded in `src/router.tsx`.
+- **Respect the role matrix.** Technician = own jobs only; supervisor = live team + create/
+  assign; manager = team points/analytics + delete; admin = people/roles/audit/security. Use
+  `src/domain/auth/roles.ts` for every nav, route, screen and action check. These client gates
+  are not a server boundary — mirror them with Supabase RLS in production.
+- **Keep screens lazy-loaded** in `src/router.tsx`; the Control room is `/control` and the
+  admin console is `/admin`. Never expose either in technician navigation.
 - **Stay light for low-end phones:** no new eager dependency, proof photos capped at 1280 px,
   idle prefetch gated on `deviceMemory` / `hardwareConcurrency` / save-data.
 - **Releases:** never hand-publish an APK or edit `public/update.json`. Ship with

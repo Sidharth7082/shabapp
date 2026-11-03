@@ -1,8 +1,9 @@
 import { create } from 'zustand'
 import { createJSONStorage, persist } from 'zustand/middleware'
 import { SESSION_TTL_MS } from '@/domain/auth/session'
+import type { Role } from '@/domain/auth/roles'
 
-export type Role = 'technician' | 'admin'
+export type { Role } from '@/domain/auth/roles'
 
 interface Account {
   id: string
@@ -27,9 +28,6 @@ interface SessionState {
   signOut: () => void
   /** Refresh the idle clock after real user interaction (throttled by the shell). */
   touch: () => void
-  setRole: (role: Role) => void
-  setName: (name: string) => void
-  setDailyTarget: (target: number) => void
 }
 
 const SIGNED_OUT = {
@@ -94,12 +92,15 @@ export const useSession = create<SessionState>()(
         })
       },
       signOut: () => set({ ...SIGNED_OUT }),
-      touch: () => set({ lastActiveAt: new Date().toISOString() }),
-      setRole: (role) => set({ role }),
-      setName: (name) => set({ name }),
-      setDailyTarget: (target) =>
-        set({ dailyTarget: Math.max(0, Math.round(Number.isFinite(target) ? target : 0)) })
+      touch: () => set({ lastActiveAt: new Date().toISOString() })
     }),
-    { name: 'shabh-session', storage: tabAwareStorage! }
+    {
+      name: 'shabh-session',
+      storage: tabAwareStorage!,
+      version: 2,
+      // v1 stored the manager as `role: 'admin'`. Sign every old session out so
+      // nobody is silently promoted when the four-role model arrives.
+      migrate: () => ({ ...SIGNED_OUT } as SessionState)
+    }
   )
 )
