@@ -102,10 +102,10 @@ restores the seeded board.
   add points; houses beyond the target appear as extra points toward the incentive.
 - **Team locator:** the control room lists each technician with on-site status, active visit and
   the latest check-in/sign-off position (`28.53550, 77.39100` ±18 m) plus a Google Maps link.
-- **About & updates:** About shows `Stable v0.2.2`, release notes, privacy, notices and a manual
+- **About & updates:** About shows `Stable v0.2.3`, release notes, privacy, notices and a manual
   update check. On a Pixel 6 the installed v0.2.0 build showed the real “New version available ·
   v0.2.1” on launch, Download opened the APK in Chrome, and Not now suppressed it on the next
-  launch. The v0.2.2 APK was installed on the same emulator and reports `Stable v0.2.2`.
+  launch. The v0.2.3 APK was installed on the same emulator and reports `Stable v0.2.3`.
 - **Profile & login:** the bottom nav has a Profile tab for both roles and the header avatar opens
   it; the profile card shows the full name, `EMP-1042 · Technician`, the shift-target badge and
   sign-out. The redesigned login offers one-tap demo accounts, show/hide PIN, field validation,
