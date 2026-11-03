@@ -8,7 +8,7 @@
 - **Last updated:** 2026-11-02
 - **Stage:** Phase 1 complete — production-ready offline PWA. Phase 2 (real OTP + multi-device
   sync) is next and is blocked on credentials.
-- **Health:** `npx tsc --noEmit` clean · `npm test` 44/44 pass · `npm run build` ok
+- **Health:** `npx tsc --noEmit` clean · `npm test` 84/84 pass · `npm run build` ok
 - **Repo:** private GitHub repo `shabapp` (see README for how to clone)
 
 ## 1. What we are building
@@ -40,7 +40,7 @@ offline-first on IndexedDB and installs as a PWA; an Android wrapper via Capacit
 | Area | State | Notes / evidence |
 | --- | --- | --- |
 | Job board and dashboard | **Live** | Board with customer, location, services, priority and status; search by customer / job ID / location / status; Active / Today / Overdue / History / All filters; “Needs attention” alerts (overdue, urgent, new assignment); today’s overview with points % and overdue job; pending-services breakdown by job; quick actions; upcoming schedule; recent history. Verified in the browser on seeded and created jobs |
-| Employee sign-in with employee ID + PIN | **Demo** | Verified: field validation (ID format, PIN length), wrong PIN shows attempts left, 5 failures lock for 30 s with a countdown, loading state, show/hide PIN, forgot-PIN help sheet, one-tap demo accounts and “keep me signed in” (localStorage vs sessionStorage). Still a demo — production is Supabase Auth |
+| Employee sign-in with employee ID + PIN | **Demo** | Verified: field validation (ID format, PIN length), PBKDF2 verification (wrong PIN shows attempts left), 5 failures lock for 30 s with a countdown, loading state, show/hide PIN, forgot-PIN help sheet, one-tap demo accounts, “keep me signed in” (localStorage vs sessionStorage) and a 12 h / 2 h idle session expiry. Still a demo — production is Supabase Auth |
 | Shift points: 1 per completed house, target 12/day | **Live** | Verified: one 5-service house showed `1 / 12 points`; extra houses are shown as extra points |
 | Customer credit tiers: only tier 1 (60 min) and tier 2 (90 min) | **Live** | Tier badge on job cards, job sheet and control-room rows; verified SH-1051 as tier 1 |
 | Multi-service visit (AC, solar, CCTV, chimney, RO, geyser, meter, fire systems) | **Live** | 13 checklist templates; SH-1051 holds CCTV, chimney, RO, geyser and meter |
@@ -50,8 +50,9 @@ offline-first on IndexedDB and installs as a PWA; an Android wrapper via Capacit
 | Team locator (last known position) | **Live (last fix only)** | Control room shows on-site status, active visit, latest check-in/sign-off fix and a Maps link; live tracking needs Phase 2 |
 | Android app (debug APK) | **Live for testing** | Capacitor 8, `com.shabh.service`; verified on Pixel 6 / API 36: sign-in, OTP clock `59m 59s`, live camera 720×1280, photo + watermark + GPS ±5 m |
 | About screen | **Live** | Verified on device (v0.2.2): About shows `Stable v0.2.2`, the v0.2.2 release notes, Privacy, Third-party notices, website and the proprietary footer |
-| Profile & settings | **Live** | Verified on device: Profile tab in the nav, header profile button, full name + `EMP-1042 · Technician`, target badge, sign-out, About & updates, admin control room |
-| Low-end performance | **Live** | Entry JS 50.2 KB (17.0 KB gzip); dashboard lives in the 26.1 KB `JobsScreen` route chunk, help sheet is a 2 KB lazy chunk; cold start **1.09 s** on the Pixel 6 emulator; proof photo **720×1280 / 18.9 KB** vs old 1392×1856 / 53.4 KB; update check deferred to idle; prefetch skipped on ≤4 GB / ≤4-core / save-data devices |
+| Profile & settings | **Live** | Verified on device: Profile tab in the nav, header profile button, full name + `EMP-1042 · Technician`, target badge, sign-out, About & updates, admin control room. Security card lists the session deadline and device protections |
+| Security hardening | **Live** | Demo PINs are PBKDF2-SHA256 hashes with per-employee salts and the demo PIN is not displayed in the app (only in repo docs), sessions expire after 12 h / 2 h idle, production CSP is same-origin scripts only, Android blocks cleartext + user CAs with backups off and WebView file access off, and the update manifest allows only HTTPS release-repo URLs. Verified in the production preview and on the APK (hashed login, Security card, live camera readyState 4). The demo one-tap accounts and on-device OTP remain demo-only |
+| Low-end performance | **Live** | Entry JS 52.6 KB (17.9 KB gzip); dashboard lives in the 26.1 KB `JobsScreen` route chunk, help sheet is a 2 KB lazy chunk; cold start **1.09 s** on the Pixel 6 emulator; proof photo **720×1280 / 18.9 KB** vs old 1392×1856 / 53.4 KB; update check deferred to idle; prefetch skipped on ≤4 GB / ≤4-core / save-data devices |
 | Phone layout | **Live** | Verified on device: login (quick accounts, show/hide PIN) and settings fit without cropping; 4-tab technician nav and 5-tab manager nav (73 px each on a 390 px viewport). Dashboard, login and help sheet re-checked at a 320 px-wide viewport in the browser with no horizontal overflow |
 | In-app update check | **Live** | Verified on device: installed v0.2.0 showed the real “New version available · v0.2.1” with release notes, Download opened the APK in Chrome, Not now suppressed it on relaunch; installed v0.2.2 reports `Stable v0.2.2` on About |
 | Live camera capture + burned watermark (before + after per service) | **Live** | Zero file inputs in the bundle (CI-checked) |
@@ -92,7 +93,11 @@ offline-first on IndexedDB and installs as a PWA; an Android wrapper via Capacit
     script bumps the version, builds, uploads the APK, updates the public manifest and the
     changelog. That manifest is what makes installed apps show **“New version available”** with
     notes and a Download button on their next launch. See §11.
-11. **Stay light for low-end phones.** No new eager dependency; keep the entry bundle within
+11. **No plaintext credentials or secrets in the bundle.** Demo PINs are PBKDF2 hashes and only
+    the demo directory may be local; real credentials belong in Supabase Auth. Never commit
+    `.env`, keys, tokens or customer data. Validate anything fetched from the network (the
+    update manifest is restricted to HTTPS links in the release repository).
+12. **Stay light for low-end phones.** No new eager dependency; keep the entry bundle within
     budget, cap proof photos at 1280 px, and gate idle prefetch on device memory / save-data.
 
 ## 4. Phases
@@ -111,6 +116,7 @@ offline-first on IndexedDB and installs as a PWA; an Android wrapper via Capacit
 - [x] Dashboard: needs-attention alerts, today’s overview with points percentage, pending breakdown by job, search + filters, quick actions, upcoming schedule, recent history
 - [x] Profile tab in the bottom nav + header profile button; profile card with employee ID and target
 - [x] Low-end pass: deferred update check, gated prefetch, 1280 px photos, unused dependencies removed
+- [x] Security pass: PBKDF2 PIN hashes, 12 h / 2 h idle session expiry, production CSP, HTTPS-only Android policy, backups off, WebView hardening, update-manifest allowlist
 - [x] Native builds use a self-destroying service worker so an APK update never serves stale JS
 - [x] Job board with today's visits, shift points (1 per completed house) and progress card
 - [x] Team locator in the control room (last check-in/sign-off fix + Maps link)
@@ -124,7 +130,7 @@ offline-first on IndexedDB and installs as a PWA; an Android wrapper via Capacit
 - [x] Control room (create/assign/delete), role gating, reset demo data
 - [x] Insights dashboard
 - [x] Four estimate tools + saved estimates
-- [x] 68 engine/helper tests, PWA build, offline precache
+- [x] 84 engine/helper tests, PWA build, offline precache
 - [x] Accessibility pass: focus-trapped sheets, labels, reduced motion, 48 px targets
 - [x] Hardening: error boundary, lazy routes, transactions, invalid-date guards
 - [x] Performance: route splitting (`react` 206 kB / `data` 101 kB vendors, entry 42.5 kB),
@@ -187,6 +193,7 @@ offline-first on IndexedDB and installs as a PWA; an Android wrapper via Capacit
 | 14 | Incentive rate card (₹ per point above target) | P2 | **User to supply incentive policy** | 0.5 day |
 | 15 | Live employee tracking (realtime map) | P2 | Sync (#5) + GPS reliability | 2 days |
 | 16 | Move the update manifest/APK to company-controlled storage (Supabase or shabhcreations.com) | P2 | User to provide storage | 0.5 day |
+| 17 | Signed release APK + screen-capture protection (`FLAG_SECURE`) | P1 | Release keystore / Play Console account | 0.5 day |
 
 ## 6. Open questions for the user
 
@@ -217,12 +224,20 @@ offline-first on IndexedDB and installs as a PWA; an Android wrapper via Capacit
   and only when the device grants GPS. If the manager's device has not synced, it shows the last
   position stored locally. Live tracking is backlog item #15.\n- Gas pricing exists only for Ansul and Cryptzo in the source tool; other brands need rates.
 - The app is single-device until sync lands; the control room shows only local jobs.
+- **Client-side hardening has limits.** Hashed PINs, the attempt counter and session expiry stop
+  casual access, but someone who controls the device or its storage can still tamper. Real
+  guarantees need server-side auth and OTP (Phase 2) and a signed release build.
+- **The demo paths are intentional.** One-tap demo accounts and the on-screen demo OTP bypass the
+  PIN flow; remove them before production use.
+- **CSP is delivered as a meta tag.** Hosts must send `frame-ancestors`/HSTS headers for those;
+  the APK serves local content only. Release APKs are debug-signed until a production keystore is
+  configured.
 
 ## 8. How we verify (definition of "working")
 
 ```bash
 npx tsc --noEmit      # must be clean (tsc -b does not work here)
-npm test              # 68 tests, engine golden values + tier/shift/team/version/capture/dashboard/login helpers
+npm test              # 84 tests, engine golden values + tier/shift/team/version/capture/dashboard/login/session/credentials/update-manifest helpers
 npm run build         # production build + PWA precache
 grep -o 'type:"file"' dist/assets/*.js | wc -l   # must print 0
 ```
@@ -262,6 +277,20 @@ This file is maintained by **rules, not by memory**:
 - Login: field validation, loading state, 5-attempt/30-second lockout, forgot-PIN help with administrator contact and keep-me-signed-in.
 - Brand mark on login, header and update sheet; the help sheet loads on demand.
 - Dashboard stays in the JobsScreen route chunk; 68 tests pass.
+
+### 2026-11-03 — Security hardening
+- Demo PINs are PBKDF2-SHA256 hashes with a random salt per employee; no plaintext PIN ships in
+  the bundle, verification is constant-time, and unknown IDs still pay the hashing cost.
+- Sessions now expire after 12 hours and after 2 hours without interaction; the login screen
+  explains an expired sign-out and Settings shows when the session ends.
+- Production builds carry a strict CSP (same-origin scripts, allowlisted update endpoints, no
+  objects/forms) and a no-referrer policy.
+- Android: backups and data transfer disabled, cleartext traffic and user-installed CAs
+  rejected, WebView file/content access off, tapjacking filter on, remote debugging off in
+  release builds.
+- The update manifest is validated (semver, note caps, HTTPS release-repo-only links) before the
+  app shows or opens anything.
+- Settings has a Security card with the protections and the demo limits; 84 tests pass.
 
 ### 2026-11-03 — Dashboard depth + login hardening
 - Job board now carries the operational dashboard: needs-attention alerts (overdue, urgent,

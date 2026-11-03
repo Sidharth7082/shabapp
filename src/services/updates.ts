@@ -1,6 +1,13 @@
 import { settingGet, settingSet } from '@/db/db'
 import { openExternal } from '@/lib/openExternal'
+import {
+  isTrustedReleaseUrl,
+  sanitizeUpdateManifest,
+  type UpdateManifest
+} from '@/domain/updates/manifest'
 import { APP_VERSION } from '@/version'
+
+export type { UpdateManifest } from '@/domain/updates/manifest'
 
 /**
  * Public update manifest. The application source is private; this file lives
@@ -19,15 +26,6 @@ export const UPDATE_MANIFEST_URL =
  */
 const UPDATE_CONTENTS_API =
   'https://api.github.com/repos/Sidharth7082/shabapp-releases/contents/update.json'
-
-export interface UpdateManifest {
-  version: string
-  channel?: string
-  releasedAt?: string
-  notes?: string[]
-  apkUrl?: string
-  webUrl?: string
-}
 
 export type UpdateCheck =
   | { ok: true; manifest: UpdateManifest; available: boolean }
@@ -57,10 +55,16 @@ export function isNewerVersion(latest: string, current = APP_VERSION): boolean {
   return compareVersions(latest, current) > 0
 }
 
-function decodeBase64Json(content: string): UpdateManifest {
+function decodeBase64Json(content: string): unknown {
   const binary = atob(content.replace(/\s/g, ''))
   const bytes = Uint8Array.from(binary, (char) => char.charCodeAt(0))
-  return JSON.parse(new TextDecoder().decode(bytes)) as UpdateManifest
+  return JSON.parse(new TextDecoder().decode(bytes)) as unknown
+}
+
+function trustedManifest(payload: unknown): UpdateManifest {
+  const manifest = sanitizeUpdateManifest(payload)
+  if (!manifest) throw new Error('The update manifest is invalid or untrusted.')
+  return manifest
 }
 
 async function fetchManifest(signal: AbortSignal): Promise<UpdateManifest> {
@@ -68,7 +72,7 @@ async function fetchManifest(signal: AbortSignal): Promise<UpdateManifest> {
   if (override) {
     const response = await fetch(`${override}?t=${Date.now()}`, { signal, cache: 'no-store' })
     if (!response.ok) throw new Error(`Update server returned ${response.status}`)
-    return (await response.json()) as UpdateManifest
+    return trustedManifest(await response.json())
   }
 
   try {
@@ -79,7 +83,7 @@ async function fetchManifest(signal: AbortSignal): Promise<UpdateManifest> {
     })
     if (response.ok) {
       const payload = (await response.json()) as { content?: string }
-      if (typeof payload.content === 'string') return decodeBase64Json(payload.content)
+      if (typeof payload.content === 'string') return trustedManifest(decodeBase64Json(payload.content))
     }
   } catch {
     // fall through to the raw URL
@@ -90,7 +94,7 @@ async function fetchManifest(signal: AbortSignal): Promise<UpdateManifest> {
     cache: 'no-store'
   })
   if (!response.ok) throw new Error(`Update server returned ${response.status}`)
-  return (await response.json()) as UpdateManifest
+  return trustedManifest(await response.json())
 }
 
 export async function checkForUpdates(timeoutMs = 7000): Promise<UpdateCheck> {
@@ -98,7 +102,6 @@ export async function checkForUpdates(timeoutMs = 7000): Promise<UpdateCheck> {
   const timer = setTimeout(() => controller.abort(), timeoutMs)
   try {
     const manifest = await fetchManifest(controller.signal)
-    if (!manifest?.version) return { ok: false, error: 'The update manifest is invalid.' }
     return { ok: true, manifest, available: isNewerVersion(manifest.version) }
   } catch {
     return { ok: false, error: 'Could not reach the update server. Check the connection.' }
@@ -128,6 +131,6 @@ function isNativePlatform(): boolean {
 export async function openUpdateDownload(manifest: UpdateManifest): Promise<void> {
   const native = isNativePlatform()
   const url = native ? manifest.apkUrl ?? manifest.webUrl : manifest.webUrl ?? manifest.apkUrl
-  if (!url) return
+  if (!url || !isTrustedReleaseUrl(url)) return
   await openExternal(url)
 }

@@ -13,13 +13,12 @@ export const WEBSITE_URL = 'https://shabhcreations.com/'
 
 /** Human-facing highlights for the installed build (About → What's new). */
 export const RELEASE_NOTES: string[] = [
-  'New dashboard: alerts, today’s overview with points % of target, pending services by job, quick actions and a seven-day points chart.',
-  'Service board search by customer, job ID, location or status, with Active / Today / Overdue / History / All filters.',
-  'Upcoming schedule with arrival estimates and quick access to recently completed visits.',
-  'Login hardening: field validation, loading state, attempt limit with a 30-second lockout, forgot-PIN help and “keep me signed in”.',
-  'One completed house is one point; tier 1 visits run 60 minutes, tier 2 run 90.',
-  'Start and work-done OTPs, live before/after photos with a burned watermark, and offline-first storage stay unchanged.',
-  'Brand mark on the login screen, header and update sheet; the help sheet loads only when needed.'
+  'Security: demo PINs are stored as salted PBKDF2 hashes — no plaintext PIN ships in the app bundle.',
+  'Sessions now expire after 12 hours, or after 2 hours without interaction, with a clear sign-in notice.',
+  'Production builds enforce a strict content security policy and HTTPS-only network access.',
+  'Android: backups disabled, WebView file access off, tapjacking taps filtered and remote debugging off in release builds.',
+  'Update downloads are validated against the official release repository before opening.',
+  'Dashboard, login, camera proof and OTP flows are unchanged.'
 ]
 
 /** Third-party components. The app itself is proprietary, not open source. */

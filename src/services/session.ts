@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import { createJSONStorage, persist } from 'zustand/middleware'
+import { SESSION_TTL_MS } from '@/domain/auth/session'
 
 export type Role = 'technician' | 'admin'
 
@@ -19,8 +20,13 @@ interface SessionState {
   dailyTarget: number
   /** True = remember on this device (localStorage); false = this app session only. */
   remember: boolean
+  signedInAt: string
+  lastActiveAt: string
+  expiresAt: string
   signIn: (account: Account, remember?: boolean) => void
   signOut: () => void
+  /** Refresh the idle clock after real user interaction (throttled by the shell). */
+  touch: () => void
   setRole: (role: Role) => void
   setName: (name: string) => void
   setDailyTarget: (target: number) => void
@@ -32,7 +38,10 @@ const SIGNED_OUT = {
   name: '',
   role: 'technician' as Role,
   dailyTarget: 12,
-  remember: true
+  remember: true,
+  signedInAt: '',
+  lastActiveAt: '',
+  expiresAt: ''
 }
 
 /**
@@ -70,16 +79,22 @@ export const useSession = create<SessionState>()(
   persist(
     (set) => ({
       ...SIGNED_OUT,
-      signIn: (account, remember = true) =>
+      signIn: (account, remember = true) => {
+        const now = Date.now()
         set({
           signedIn: true,
           employeeId: account.id,
           name: account.name,
           role: account.role,
           dailyTarget: account.dailyTarget,
-          remember
-        }),
+          remember,
+          signedInAt: new Date(now).toISOString(),
+          lastActiveAt: new Date(now).toISOString(),
+          expiresAt: new Date(now + SESSION_TTL_MS).toISOString()
+        })
+      },
       signOut: () => set({ ...SIGNED_OUT }),
+      touch: () => set({ lastActiveAt: new Date().toISOString() }),
       setRole: (role) => set({ role }),
       setName: (name) => set({ name }),
       setDailyTarget: (target) =>

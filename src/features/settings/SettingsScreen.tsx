@@ -11,7 +11,8 @@ import {
   CheckIcon,
   ChevronRightIcon,
   ClockIcon,
-  LayersIcon
+  LayersIcon,
+  ShieldIcon
 } from '@/components/ui/icons'
 import { NumberInput, TextInput } from '@/components/ui/fields'
 import { toast } from '@/components/ui/toast'
@@ -56,12 +57,30 @@ function StatusRow({ tone, label, body }: { tone: 'ok' | 'warn' | 'neutral'; lab
 }
 
 export function SettingsScreen() {
-  const { name, role, employeeId, dailyTarget, setName, setDailyTarget, signOut } = useSession()
+  const {
+    name,
+    role,
+    employeeId,
+    dailyTarget,
+    expiresAt,
+    setName,
+    setDailyTarget,
+    signOut
+  } = useSession()
   const navigate = useNavigate()
   const jobs = useLiveQuery(() => db.jobs.count(), [])
   const photos = useLiveQuery(() => db.photos.count(), [])
   const estimates = useLiveQuery(() => db.estimates.count(), [])
   const [busy, setBusy] = useState(false)
+
+  const sessionEnds = expiresAt
+    ? new Date(expiresAt).toLocaleString('en-IN', {
+        day: '2-digit',
+        month: 'short',
+        hour: '2-digit',
+        minute: '2-digit'
+      })
+    : 'sign in again'
 
   const initials = name
     .split(' ')
@@ -166,6 +185,42 @@ export function SettingsScreen() {
             <ChevronRightIcon size={15} className="text-ink-mute" />
           </Link>
         )}
+      </Card>
+
+      <Card className="p-4">
+        <SectionHeader title="Security" subtitle="Device protections in this build" />
+        <div className="divide-y divide-surface-line">
+          <StatusRow
+            tone="ok"
+            label="Session timeout"
+            body={`Hard 12-hour limit. This session ends ${sessionEnds}; it also signs out after 2 hours without activity.`}
+          />
+          <StatusRow
+            tone="ok"
+            label="PIN checked, not stored"
+            body="PINs are verified against a salted PBKDF2 hash; the plaintext PIN is never kept on the device."
+          />
+          <StatusRow
+            tone="ok"
+            label="Network"
+            body="HTTPS only. Cleartext traffic and user-installed certificates are blocked on Android."
+          />
+          <StatusRow
+            tone="ok"
+            label="Device hardening"
+            body="Backups disabled, WebView file access off, tapjacking filter on, remote debugging off in release builds."
+          />
+          <StatusRow
+            tone="warn"
+            label="Demo limits"
+            body="One-tap demo accounts, the demo PIN and the on-screen OTP are demonstrations, not production authentication."
+          />
+        </div>
+        <p className="mt-2 flex items-start gap-1.5 rounded-xl bg-surface-sunken px-2.5 py-2 text-[10px] leading-4 text-ink-mute">
+          <ShieldIcon size={13} className="mt-0.5 shrink-0 text-ink-mute" />
+          Production security needs Supabase Auth, server-side OTP and a signed release build. See the
+          security model in the project docs.
+        </p>
       </Card>
 
       <Card className="p-4">

@@ -1,5 +1,5 @@
 import { lazy, Suspense, useEffect, useRef, useState, type FormEvent } from 'react'
-import { Navigate, useNavigate } from 'react-router-dom'
+import { Navigate, useNavigate, useSearchParams } from 'react-router-dom'
 import clsx from 'clsx'
 import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/display'
@@ -17,6 +17,7 @@ import {
   type LoginErrors
 } from '@/domain/auth/login'
 import { useSession } from '@/services/session'
+import { consumeSessionExpired } from '@/services/sessionExpiry'
 import { COMPANY_NAME } from '@/version'
 
 const LoginHelpSheet = lazy(() =>
@@ -66,6 +67,10 @@ export function LoginScreen() {
   const signedIn = useSession((state) => state.signedIn)
   const signIn = useSession((state) => state.signIn)
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  const [expired] = useState(
+    () => searchParams.get('expired') === '1' || consumeSessionExpired()
+  )
 
   const [employeeId, setEmployeeId] = useState('')
   const [pin, setPin] = useState('')
@@ -143,7 +148,7 @@ export function LoginScreen() {
     setLoading(true)
     setSelected(null)
     await new Promise((resolve) => window.setTimeout(resolve, 400))
-    const employee = authenticateEmployee(normalizeEmployeeId(employeeId), pin.trim())
+    const employee = await authenticateEmployee(normalizeEmployeeId(employeeId), pin.trim())
 
     if (!employee) {
       setLoading(false)
@@ -182,10 +187,10 @@ export function LoginScreen() {
 
   const fillDemo = () => {
     setEmployeeId('EMP-1042')
-    setPin('1234')
+    setPin('')
     clearFeedback()
     setHelpOpen(false)
-    requestAnimationFrame(() => pinRef.current?.focus())
+    requestAnimationFrame(() => idRef.current?.focus())
   }
 
   return (
@@ -221,6 +226,15 @@ export function LoginScreen() {
           <p className="mt-0.5 text-[12px] leading-5 text-ink-mute">
             Sign in to see today’s visits and your shift target.
           </p>
+
+          {expired && !locked && (
+            <p
+              role="status"
+              className="mt-3 rounded-lg bg-warn-soft px-3 py-2 text-[11.5px] font-semibold text-warn"
+            >
+              Your session ended for security. Sign in again.
+            </p>
+          )}
 
           {locked && (
             <p
@@ -420,8 +434,8 @@ export function LoginScreen() {
         </form>
 
         <p className="mt-2.5 text-center text-[10px] leading-4 text-ink-mute">
-          Demo sign-in only — the PIN ships inside the app bundle and is not a security boundary.
-          Production uses Supabase Auth.
+          Demo sign-in only — the one-tap demo accounts are not a security boundary. Production
+          uses Supabase Auth with server-side verification.
         </p>
         <button
           type="button"

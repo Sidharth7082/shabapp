@@ -1,5 +1,5 @@
 /// <reference types="vitest" />
-import { defineConfig } from 'vite'
+import { defineConfig, type Plugin } from 'vite'
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
 import { fileURLToPath, URL } from 'node:url'
@@ -13,6 +13,45 @@ const pkg = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 
 // after an app update, so it is disabled for Capacitor builds.
 const isCapacitorBuild = process.env.CAPACITOR === 'true'
 
+/**
+ * Production-only security headers. Scripts stay same-origin (no inline), the
+ * only network destinations are the public update-manifest endpoints, and the
+ * page cannot be framed, sniffed into another type or submit a form elsewhere.
+ */
+function securityMeta(): Plugin {
+  const csp = [
+    "default-src 'self'",
+    "script-src 'self'",
+    "style-src 'self' 'unsafe-inline'",
+    "img-src 'self' data: blob:",
+    "media-src 'self' blob:",
+    "font-src 'self'",
+    "connect-src 'self' https://api.github.com https://raw.githubusercontent.com",
+    "object-src 'none'",
+    "base-uri 'self'",
+    "form-action 'none'"
+  ].join('; ')
+
+  return {
+    name: 'shabh-security-meta',
+    apply: 'build',
+    transformIndexHtml() {
+      return [
+        {
+          tag: 'meta',
+          attrs: { 'http-equiv': 'Content-Security-Policy', content: csp },
+          injectTo: 'head-prepend'
+        },
+        {
+          tag: 'meta',
+          attrs: { name: 'referrer', content: 'no-referrer' },
+          injectTo: 'head-prepend'
+        }
+      ]
+    }
+  }
+}
+
 export default defineConfig({
   define: {
     __APP_VERSION__: JSON.stringify(pkg.version),
@@ -20,6 +59,7 @@ export default defineConfig({
   },
   plugins: [
     react(),
+    securityMeta(),
     ...(isCapacitorBuild
       ? [VitePWA({ selfDestroying: true })]
       : [
@@ -55,6 +95,7 @@ export default defineConfig({
   },
   build: {
     target: 'es2020',
+    modulePreload: { polyfill: false },
     chunkSizeWarningLimit: 500,
     rollupOptions: {
       output: {

@@ -1,5 +1,5 @@
-import { Suspense, useEffect, useState } from 'react'
-import { Navigate, NavLink, Outlet, Link } from 'react-router-dom'
+import { Suspense, useEffect, useRef, useState } from 'react'
+import { Navigate, NavLink, Outlet, Link, useNavigate } from 'react-router-dom'
 import clsx from 'clsx'
 import { Toaster } from '@/components/ui/toast'
 import { RouteFallback } from '@/components/RouteFallback'
@@ -12,6 +12,8 @@ import {
 } from '@/components/ui/icons'
 import { LogoMark } from '@/components/ui/LogoMark'
 import { useSession } from '@/services/session'
+import { markSessionExpired } from '@/services/sessionExpiry'
+import { SESSION_ACTIVITY_THROTTLE_MS, sessionExpired } from '@/domain/auth/session'
 
 const NAV = [
   { to: '/', label: 'Jobs', icon: BriefcaseIcon, end: true },
@@ -35,13 +37,64 @@ function useOnline(): boolean {
   return online
 }
 
+/** Clears an expired session before the dashboard can render. */
+function SessionExpiredRedirect() {
+  const signOut = useSession((state) => state.signOut)
+  useEffect(() => {
+    markSessionExpired()
+    signOut()
+  }, [signOut])
+  return <Navigate to="/login?expired=1" replace />
+}
+
 export function AppShell() {
-  const { name, role, signedIn } = useSession()
+  const { name, role, signedIn, signedInAt, lastActiveAt, expiresAt } = useSession()
   const online = useOnline()
+  const navigate = useNavigate()
+  const lastTouch = useRef(0)
   const nav = role === 'admin' ? NAV : NAV.filter((item) => item.to !== '/admin')
+
+  useEffect(() => {
+    if (!signedIn) return
+    const check = () => {
+      const state = useSession.getState()
+      if (!state.signedIn) return
+      if (sessionExpired(state)) {
+        markSessionExpired()
+        state.signOut()
+        navigate('/login?expired=1', { replace: true })
+      }
+    }
+    const activity = () => {
+      const now = Date.now()
+      if (now - lastTouch.current < SESSION_ACTIVITY_THROTTLE_MS) return
+      lastTouch.current = now
+      useSession.getState().touch()
+    }
+    const onVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        activity()
+        check()
+      }
+    }
+    check()
+    const timer = window.setInterval(check, 60_000)
+    window.addEventListener('pointerdown', activity, { passive: true })
+    window.addEventListener('keydown', activity)
+    document.addEventListener('visibilitychange', onVisibility)
+    return () => {
+      window.clearInterval(timer)
+      window.removeEventListener('pointerdown', activity)
+      window.removeEventListener('keydown', activity)
+      document.removeEventListener('visibilitychange', onVisibility)
+    }
+  }, [signedIn, navigate])
 
   // Nothing in the app is reachable without an employee session.
   if (!signedIn) return <Navigate to="/login" replace />
+  if (sessionExpired({ signedInAt, lastActiveAt, expiresAt })) {
+    return <SessionExpiredRedirect />
+  }
 
   return (
     <div className="min-h-dvh bg-surface-sunken">

@@ -82,11 +82,11 @@ restores the seeded board.
 ## Verified behaviour
 
 - Typecheck is `npx tsc --noEmit` (the project has no composite build graph, so `tsc -b` fails).
-- 68 tests pass: the recovered engine arithmetic (gas stored weight, cylinder step-up, fill
+- 84 tests pass: the recovered engine arithmetic (gas stored weight, cylinder step-up, fill
   ceilings, detector rollups, GST totals, AMC visit counts), the visit-clock helpers, credit-tier
   windows, shift points per house, the employee-location helper, version comparison, the
-  proof-photo size cap, dashboard search/filters/alerts/points helpers and login validation +
-  attempt limiting.
+  proof-photo size cap, dashboard search/filters/alerts/points helpers, login validation +
+  attempt limiting, PBKDF2 credentials, session expiry and update-manifest validation.
 - Gas wizard reproduces the site's numbers: a 5×4×3 m Novec Class C room with a 10 m pipe run
   gives 42.0 kg stored, one 80 L Ansul cylinder, and ₹3,02,596.84 including GST.
 - Sign-in: wrong PIN is rejected; either demo account opens the board with its own role and
@@ -111,9 +111,12 @@ restores the seeded board.
   sign-out. The redesigned login offers one-tap demo accounts, show/hide PIN, field validation,
   a loading state, a 5-attempt / 30-second lockout with countdown, a forgot-PIN help sheet with
   administrator contact, and a “keep me signed in” toggle that stores the session in
-  sessionStorage when unchecked. Verified in the browser: errors render under each field, a wrong
-  PIN reported 4 attempts left, 5 failures locked the form with a live countdown, and manual and
-  one-tap sign-in both opened the correct role.
+  sessionStorage when unchecked. PINs are verified against a PBKDF2-SHA256 hash with a random
+  salt per employee; no plaintext PIN ships in the bundle. A session ends after 12 hours or two
+  hours without interaction, and the login screen explains an expired sign-out. Verified in the
+  browser: errors render under each field, a wrong PIN reported 4 attempts left, 5 failures
+  locked the form with a live countdown, and manual and one-tap sign-in both opened the correct
+  role.
 - **Operations dashboard:** the jobs screen shows derived alerts (overdue, urgent, new
   assignment), today’s overview (completed / remaining / points with % of target / overdue job),
   a per-job pending-services breakdown, quick actions, a seven-day points chart, the upcoming
@@ -121,7 +124,12 @@ restores the seeded board.
   contact, service, status including “overdue”) and Active / Today / Overdue / History / All
   filters. Verified in the browser: “corporate” matched SH-1043, “overdue” matched SH-1042, and
   an unknown term showed the empty state.
-- **Low-end pass:** entry JS is 50.2 KB (17.0 KB gzip) including the login screen; the
+- **Security:** verified in the production build that a wrong PIN reports attempts left and the
+  correct PIN opens the dashboard through PBKDF2 verification, an expired session redirects to
+  the login screen with a notice and clears the store, and the hardened APK loads with the
+  security card, no CSP violations and live camera `readyState 4` at 720×1280. The merged
+  manifest shows `allowBackup=false` and `usesCleartextTraffic=false`.
+- **Low-end pass:** entry JS is 52.6 KB (17.9 KB gzip) including the login screen; the
   dashboard lives in the `JobsScreen` route chunk (26.1 KB / 7.1 KB gzip) and the help sheet is a
   2 KB lazily loaded chunk. Cold start on the Pixel 6 emulator measured **1.09 s**; a captured
   proof photo is now **720×1280 / 18.9 KB** (was 1392×1856 / 53.4 KB). Idle prefetch is skipped
@@ -131,11 +139,38 @@ restores the seeded board.
 - Job creation from the control room assigns the next `SH-` code, applies the chosen tier and
   updates pending counts.
 
+## Security
+
+This build is hardened for a demo, not certified for production. The protections that are real:
+
+- **Credentials** — the demo directory stores PBKDF2-SHA256 hashes with a random 16-byte salt
+  per employee (`src/domain/auth/credentials.ts`); verification is constant-time and no plaintext
+  PIN is shipped or displayed in the app. The demo PIN is documented only in this repository.
+  Login is limited to 5 failed attempts per 30-second lockout.
+- **Sessions** — a 12-hour hard limit and a 2-hour idle sign-out, a “keep me signed in” choice
+  between localStorage and sessionStorage, and a clear reason on the login screen.
+- **Content Security Policy** — production builds allow same-origin scripts only, inline styles,
+  `data:`/`blob:` images, and the two update-manifest endpoints; objects, base-URI changes and
+  form submissions are blocked. The policy is injected only into `dist`, so Vite dev is untouched.
+- **Android** — `allowBackup=false`, data-transfer rules exclude app data, cleartext traffic and
+  user-installed CAs are rejected, WebView file/content access is off, tapjacking taps are
+  filtered, and remote WebView debugging is disabled for release builds.
+- **Update channel** — the manifest is validated before use: semver shape, capped notes, and only
+  HTTPS links inside `Sidharth7082/shabapp-releases` are accepted. The release script also
+  HEAD-probes the advertised APK URL.
+- **Camera** — still no file inputs; proof photos come only from `getUserMedia` and are
+  watermarked in canvas.
+
+Honest limits: one-tap demo accounts and the on-screen OTP are demo paths; a determined attacker
+with control of the device can bypass client-side controls. Production requires Supabase Auth,
+server-side OTP, a signed release APK and an HTTPS host with security headers. See
+`docs/SECURITY-OTP-CAMERA.md`.
+
 ## Performance & resilience
 
 - **Route-level code splitting:** every screen is `lazy()` behind a `Suspense` skeleton.
-  Measured build: entry `index` 50.2 kB (17.0 kB gzip), vendors split into `react` 206 kB
-  (67.3 kB gzip) and `data`/Dexie 100.8 kB (33 kB gzip); jobs/dashboard 26.1 kB, job detail
+  Measured build: entry `index` 52.6 kB (17.9 kB gzip), vendors split into `react` 206 kB
+  (67.5 kB gzip) and `data`/Dexie 100.8 kB (33 kB gzip); jobs/dashboard 26.1 kB, job detail
   38.2 kB, estimate tools 10–28 kB, and the login help sheet is a 2 kB lazy chunk.
 - **Idle prefetch:** after first paint the secondary chunks (estimate hub, insights, control
   room, settings, About) are warmed with `requestIdleCallback` on capable devices, so the first
@@ -149,11 +184,11 @@ restores the seeded board.
   photo blob falls back to a placeholder, and the whole tree sits inside an `ErrorBoundary`
   with Reload / Try again / Settings actions.
 - **PWA:** `navigator.storage.persist()` is requested so IndexedDB job and photo data is not
-  evicted; the service worker precaches 35 assets (594 kB) for full offline use (the APK ships a
+  evicted; the service worker precaches 35 assets (600 kB) for full offline use (the APK ships a
   self-destroying service worker instead, so app updates never serve stale JS).
 - **Modal a11y:** sheets trap Tab focus, focus the panel on open, close on `Escape`, lock body
   scroll, and restore focus to the trigger.
-- PWA build precaches 35 assets; `npx tsc --noEmit` and all 68 tests pass after the pass.
+- PWA build precaches 35 assets; `npx tsc --noEmit` and all 84 tests pass after the pass.
 
 ## Android app (test build)
 

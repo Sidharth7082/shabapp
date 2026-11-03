@@ -35,8 +35,8 @@ Rules enforced by the schema and functions:
 Without Supabase credentials the app runs `src/services/otp.ts`, which implements the
 same state machine on-device for both purposes (`start` and `complete`) and displays the
 code in a clearly labelled demo banner. That path exists so the flow can be tested; it is
-not a security boundary. Employee sign-in is likewise a demo directory
-(`src/data/employees.ts`) until Supabase Auth lands.
+not a security boundary. Employee sign-in is a demo directory (`src/data/employees.ts`) with
+PBKDF2-hashed PINs and deliberate one-tap demo accounts; neither path is a security boundary.
 
 ## Live camera enforcement
 
@@ -69,3 +69,40 @@ cannot be completed — the step does not offer an alternative upload path.
 - GPS is requested at capture time and may be unavailable indoors. The photo still
   records "GPS unavailable" rather than failing silently.
 - Native enforcement (and stronger device attestation) arrives with the Capacitor wrapper.
+
+## App hardening (v0.2.3)
+
+These controls reduce the blast radius of a lost or unattended device and make the shell harder
+to tamper with. They do not replace server-side authentication.
+
+- **PIN storage:** PBKDF2-SHA256 with 210,000 iterations, a random 16-byte salt per employee and
+a constant-time comparison. No plaintext PIN is shipped or displayed in the app (the demo PIN is
+documented only in repository docs). The verifier still runs on the client, so a 4-digit PIN
+remains offline-brute-forceable; production verifies credentials server-side.
+- **Sessions:** 12-hour hard limit, 2-hour idle sign-out, localStorage only when “keep me signed
+in” is chosen, explicit expiry notice and a cleared store.
+- **CSP (production builds only):** `script-src 'self'`, no inline scripts (the module-preload
+polyfill is disabled), styles from self plus inline style attributes, images from
+`data:`/`blob:`, and network access limited to the two update-manifest endpoints. Objects, base
+URI changes and form submissions are blocked; `no-referrer` is set.
+- **Android:** `allowBackup=false` plus data-extraction rules, a network security config that
+blocks cleartext and user-installed CAs, WebView file/content access off, mixed content never,
+safe browsing on, `setFilterTouchesWhenObscured` for tapjacking, and remote WebView debugging
+disabled in release builds.
+- **Update manifest:** semver shape, capped notes, and only HTTPS links inside
+`https://github.com/Sidharth7082/shabapp-releases`; the APK URL must be a release download. The
+release script HEAD-probes the advertised URL before publishing the manifest.
+- **Camera:** unchanged — `getUserMedia` → canvas → watermark, with no file input anywhere.
+
+### Residual risks
+
+- One-tap demo accounts and the on-screen OTP bypass the PIN flow by design.
+- App data is app-sandboxed by Android but not encrypted at rest by the web layer; disabling
+backups prevents it leaving the device through Android backup/transfer.
+- Release APKs are debug-signed until a production keystore is configured; Android cannot verify
+the publisher across debug and production builds.
+- A CSP delivered as a `<meta>` tag cannot enforce `frame-ancestors` or HSTS; the production host
+must send those headers. The APK serves local content only.
+- OS-level screenshots/screen recording remain possible; `FLAG_SECURE` is backlog #17.
+- Client-side controls are bypassable by anyone who can modify the app or its storage. Treat any
+on-device value as untrusted when the backend arrives.

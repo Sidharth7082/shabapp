@@ -1,41 +1,71 @@
+import { verifyPin, type PinCredential } from '@/domain/auth/credentials'
+
 export type EmployeeRole = 'technician' | 'admin'
 
 export interface DemoEmployee {
   id: string
   name: string
   role: EmployeeRole
-  pin: string
   /** Services the technician is expected to close in one shift. */
   dailyTarget: number
+  /** PBKDF2 hash of the demo PIN — no plaintext PIN is shipped in the bundle. */
+  credential: PinCredential
 }
 
 /**
  * Demo sign-in directory.
  *
  * PRODUCTION: replace with Supabase Auth (email/phone + password) and a
- * `profiles` row that carries the role and shift target. Nothing here is a
- * security boundary — the PIN is visible in the bundle, exactly like the demo
- * OTP. See PLAN.md §4 Phase 2.
+ * `profiles` row that carries the role and shift target. The demo one-tap
+ * accounts and the shared demo PIN are deliberate demo affordances, not a
+ * security boundary. The hashes below only stop casual credential extraction
+ * from the APK. See PLAN.md §3 golden rule 6.
  */
 export const DEMO_EMPLOYEES: DemoEmployee[] = [
   {
     id: 'EMP-1042',
     name: 'Aarav Sharma',
     role: 'technician',
-    pin: '1234',
-    dailyTarget: 12
+    dailyTarget: 12,
+    credential: {
+      salt: 'G14yGkBmzeiyCk295Hj+zA==',
+      hash: 'hd5mJdHoEIxknVi8GxW3kU7ppB4TAJrWJ88TDd+93NM=',
+      iterations: 210_000
+    }
   },
   {
     id: 'MGR-1001',
     name: 'Priya Menon',
     role: 'admin',
-    pin: '1234',
-    dailyTarget: 0
+    dailyTarget: 0,
+    credential: {
+      salt: 'LXMliS5vBO0kghaBF9rHaw==',
+      hash: 'VC/pTINhh7FH5u9q5ROYGxgExjolzFSlRHKmKxlBLlQ=',
+      iterations: 210_000
+    }
   }
 ]
 
-export function authenticateEmployee(employeeId: string, pin: string): DemoEmployee | null {
-  const id = employeeId.trim().toUpperCase()
-  const code = pin.trim()
-  return DEMO_EMPLOYEES.find((employee) => employee.id === id && employee.pin === code) ?? null
+/** A real (but unused) hash, so an unknown ID costs the same as a wrong PIN. */
+const DUMMY_CREDENTIAL: PinCredential = {
+  salt: 'AAAAAAAAAAAAAAAAAAAAAA==',
+  hash: 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=',
+  iterations: 210_000
+}
+
+export function normalizeEmployeeId(value: string): string {
+  return value.trim().toUpperCase()
+}
+
+export async function authenticateEmployee(
+  employeeId: string,
+  pin: string
+): Promise<DemoEmployee | null> {
+  const id = normalizeEmployeeId(employeeId)
+  const employee = DEMO_EMPLOYEES.find((candidate) => candidate.id === id)
+  if (!employee) {
+    await verifyPin(pin.trim(), DUMMY_CREDENTIAL)
+    return null
+  }
+  return (await verifyPin(pin.trim(), employee.credential)) ? employee : null
 }

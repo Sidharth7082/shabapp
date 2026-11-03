@@ -26,18 +26,16 @@ export function LoginHelpSheet({
       <div className="space-y-3">
         <div className="rounded-2xl border border-surface-line bg-white p-3.5">
           <div className="flex items-center justify-between">
-            <p className="text-[13px] font-bold text-ink">Demo PIN</p>
+            <p className="text-[13px] font-bold text-ink">Demo access</p>
             <Badge tone="warn">Demo</Badge>
           </div>
           <p className="mt-1 text-[12px] leading-5 text-ink-mute">
-            The shared demo PIN is{' '}
-            <span className="rounded bg-surface-sunken px-1.5 py-0.5 font-mono text-[12px] font-bold text-ink">
-              1234
-            </span>
-            . Aarav is the technician; Priya is the manager.
+            Tap Aarav or Priya above to sign in without typing a PIN. Manual sign-in uses the
+            employee ID and demo PIN from the project documentation; the PIN is not shown in the
+            app.
           </p>
           <Button variant="secondary" full className="mt-3" onClick={onFillDemo}>
-            Fill demo credentials
+            Fill employee ID
           </Button>
         </div>
 

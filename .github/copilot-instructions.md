@@ -24,6 +24,9 @@ verified in a browser or by a test, label it "implemented, not yet verified".
 - **Unpriced SKUs say "Rate required"**, never ₹0. Estimates keep the preliminary disclaimer.
 - **OTP and employee login here are demos** — never present them as secure. Production =
   Supabase Auth + edge functions + MSG91.
+- **Never ship plaintext credentials or secrets.** Demo PINs are PBKDF2 hashes; sessions expire
+  after 12 h / 2 h idle; anything fetched from the network (update manifest) must be validated.
+  Never add a `.env`, key, token or customer data to the repo or the JS bundle.
 - **Geolocation is fire-and-forget**; never await it when verifying OTP or completing a job.
 - Job/service writes go through `db.transaction('rw', db.jobs, …)`.
 - Keep the technician role out of `/admin`; keep screens lazy-loaded in `src/router.tsx`.
