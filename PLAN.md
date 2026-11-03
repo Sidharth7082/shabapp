@@ -288,6 +288,11 @@ This file is maintained by **rules, not by memory**:
 
 ## 10. Changelog
 
+### 2026-11-03 — Missing job shows a not-found state
+- Job detail now distinguishes a pending query from a missing record. Unknown or deleted job IDs
+  show “Job not found” with a back link instead of staying on “Loading job…” forever. Verified in
+  the browser at `/jobs/job_missing_xyz`; 106 tests and the typecheck stay clean.
+
 ### 2026-11-03 — Release v0.2.4
 - Four roles with separate panels: technicians see only their own visits, supervisors get live team status and job assignment, managers get team points and activity, admins get a people/roles/audit console. Reset demo data once to load the new team jobs.
 - Verified: 106/106 tests, `npx tsc --noEmit` clean, production build with 39 precache entries and no `type:"file"` manifest entries. Public manifest reads `0.2.4` and the APK URL resolves (7.6 MB).

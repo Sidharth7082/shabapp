@@ -188,7 +188,10 @@ function StatusTimeline({ job }: { job: ServiceJob }) {
 
 export function JobDetailScreen() {
   const { id } = useParams<{ id: string }>()
-  const job = useLiveQuery(() => (id ? db.jobs.get(id) : undefined), [id])
+  const job = useLiveQuery(async () => {
+    if (!id) return null
+    return (await db.jobs.get(id)) ?? null
+  }, [id])
   const role = useSession((state) => state.role)
   const employeeName = useSession((state) => state.name)
   const [openService, setOpenService] = useState<string | null>(null)
@@ -198,7 +201,7 @@ export function JobDetailScreen() {
     return <div className="px-4 py-6 text-sm text-ink-mute">Loading job…</div>
   }
 
-  if (!job) {
+  if (job === null) {
     return (
       <div className="px-4 py-8">
         <EmptyState title="Job not found" body="It may have been removed from this device." />
