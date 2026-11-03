@@ -53,7 +53,7 @@ IndexedDB and installs as a PWA; an Android wrapper via Capacitor is planned.
 | Visit clock: starts when the start OTP is verified, per-visit deadline, late flag | **Live** | Verified on SH-1051: `startedAt`/`workDueAt` exactly 60 min apart, timer `59m 59s`, deadline `10:04 pm` |
 | Work-done OTP required to close the visit | **Demo** | Verified: footer blocked until the second code; verify set `workDoneOtpAt`; visit closed with sign-off and `completedLate` flagged |
 | Team locator (last known position) | **Live (last fix only)** | Control room shows on-site status, active visit, latest check-in/sign-off fix and a Maps link; live tracking needs Phase 2 |
-| Android app (debug APK) | **Live for testing** | Capacitor 8, `com.shabh.service`; verified on Pixel 6 / API 36: sign-in, OTP clock `59m 59s`, live camera 720×1280, photo + watermark + GPS ±5 m |
+| Android app (debug APK) | **Live for testing** | Capacitor 8, `com.shabh.service`; verified on Pixel 6 / API 36: sign-in, OTP clock `59m 59s`, live camera 720×1280, photo + watermark + GPS ±5 m; v0.2.4 installs over 0.2.3 and `SUP-2001` + PIN reaches the supervisor dashboard |
 | About screen | **Live** | Verified on device (v0.2.3): About shows `Stable v0.2.3`, the v0.2.3 security notes, Privacy, Third-party notices, website and the proprietary footer |
 | Profile & settings | **Live** | Verified: role label, read-only employee record, session/security card, links to Team/Control/Admin console by permission, About & updates. Name/role/target are changed only by an admin |
 | Security hardening | **Live** | Demo PINs are PBKDF2-SHA256 hashes with per-employee salts and the demo PIN is not displayed in the app (only in repo docs), sessions expire after 12 h / 2 h idle, production CSP is same-origin scripts only, Android blocks cleartext + user CAs with backups off and WebView file access off, and the update manifest allows only HTTPS release-repo URLs. Verified in the production preview and on the APK (hashed login, Security card, live camera readyState 4). The demo one-tap accounts and on-device OTP remain demo-only |
@@ -290,6 +290,8 @@ This file is maintained by **rules, not by memory**:
 
 ### 2026-11-03 — Release v0.2.4
 - Four roles with separate panels: technicians see only their own visits, supervisors get live team status and job assignment, managers get team points and activity, admins get a people/roles/audit console. Reset demo data once to load the new team jobs.
+- Verified: 106/106 tests, `npx tsc --noEmit` clean, production build with 39 precache entries and no `type:"file"` manifest entries. Public manifest reads `0.2.4` and the APK URL resolves (7.6 MB).
+- Verified on the Pixel 6 / API 36 emulator: the 0.2.4 APK installs over 0.2.3, the login screen renders, and `SUP-2001` + PIN reaches the supervisor dashboard (`Rohan Iyer · Supervisor`). Role separation on web was browser-verified: technician denied `/team`, `/control`, `/admin` and another technician's job; supervisor denied `/admin` and deletion; manager denied `/admin`; admin changed a role and the audit log recorded it.
 
 ### 2026-11-03 — Roles, team analytics, admin console and audit
 - Added technician / supervisor / manager / admin permissions and role-aware navigation,
