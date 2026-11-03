@@ -290,6 +290,8 @@ This file is maintained by **rules, not by memory**:
 
 ### 2026-11-03 — Release v0.2.5
 - Unknown or deleted job links now show a clear 'Job not found' state instead of loading forever. Role panels, team analytics and the admin console are unchanged.
+- Verified: 106/106 tests, `npx tsc --noEmit` clean, production build with 39 precache entries and no `type:"file"` manifest entries. Public manifest reads `0.2.5` and the APK resolves (7.6 MB).
+- Verified on the Pixel 6 / API 36 emulator: About reads `Stable v0.2.5`, `/jobs/job_missing_xyz` shows “Job not found”, and the 0.2.4 role pass holds — supervisor `/team` without analytics and `/admin` denied; admin console shows people, audit entries and security; technician denied another technician's job and `/team`; Reset demo data loaded the ten seeded jobs including Sana and Rohan.
 
 ### 2026-11-03 — Missing job shows a not-found state
 - Job detail now distinguishes a pending query from a missing record. Unknown or deleted job IDs
